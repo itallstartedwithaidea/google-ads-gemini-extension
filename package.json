@@ -1,6 +1,6 @@
 {
   "name": "google-ads-gemini-extension",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Gemini CLI extension for Google Ads management — MCP server with live API tools, skills, commands, hooks, and theme",
   "type": "module",
   "scripts": {

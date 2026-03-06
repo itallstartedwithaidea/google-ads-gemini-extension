@@ -17,3 +17,53 @@ priority = 50
 toolName = "google-ads-agent__budget_analysis"
 decision = "ask_user"
 priority = 50
+
+[[rule]]
+toolName = "google-ads-agent__list_accounts"
+decision = "ask_user"
+priority = 50
+
+[[rule]]
+toolName = "google-ads-agent__keyword_quality"
+decision = "ask_user"
+priority = 50
+
+[[rule]]
+toolName = "google-ads-agent__ad_performance"
+decision = "ask_user"
+priority = 50
+
+[[rule]]
+toolName = "google-ads-agent__geo_performance"
+decision = "ask_user"
+priority = 50
+
+[[rule]]
+toolName = "google-ads-agent__account_health"
+decision = "ask_user"
+priority = 50
+
+[[rule]]
+toolName = "google-ads-agent__device_performance"
+decision = "ask_user"
+priority = 50
+
+[[rule]]
+toolName = "google-ads-agent__impression_share"
+decision = "ask_user"
+priority = 50
+
+[[rule]]
+toolName = "google-ads-agent__change_history"
+decision = "ask_user"
+priority = 50
+
+[[rule]]
+toolName = "google-ads-agent__list_recommendations"
+decision = "ask_user"
+priority = 50
+
+[[rule]]
+toolName = "google-ads-agent__compare_performance"
+decision = "ask_user"
+priority = 50
