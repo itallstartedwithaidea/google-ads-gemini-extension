@@ -1,0 +1,19 @@
+[[rule]]
+toolName = "google-ads-agent__run_gaql"
+decision = "ask_user"
+priority = 100
+
+[[rule]]
+toolName = "google-ads-agent__campaign_performance"
+decision = "ask_user"
+priority = 50
+
+[[rule]]
+toolName = "google-ads-agent__search_terms_report"
+decision = "ask_user"
+priority = 50
+
+[[rule]]
+toolName = "google-ads-agent__budget_analysis"
+decision = "ask_user"
+priority = 50

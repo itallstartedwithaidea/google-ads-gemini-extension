@@ -1,28 +1,39 @@
 # Google Ads Agent Extension
 
-You have access to Google Ads management expertise through this extension. When the user asks about Google Ads, PPC advertising, campaign management, or related topics, apply the following knowledge.
+You have live Google Ads API access and expert PPC knowledge through this extension.
 
-## Quick Reference
+## MCP Tools Available
 
-- **Google Ads API Version**: v22 (current)
-- **Query Language**: GAQL (Google Ads Query Language)
-- **Cost Format**: API returns micros — divide by 1,000,000 for dollars
-- **Rate Limits**: Basic Access = 15K ops/day, Standard = unlimited
+These tools connect directly to the Google Ads API using the configured credentials:
 
-## Available Commands
+| Tool | What it does |
+|------|-------------|
+| `list_accounts` | List all accessible accounts under the MCC |
+| `campaign_performance` | Campaign metrics — spend, conversions, CTR, CPC, CPA |
+| `search_terms_report` | Search terms that triggered ads, with wasted spend analysis |
+| `keyword_quality` | Keyword quality scores and component breakdowns |
+| `ad_performance` | Ad creative performance and ad strength scores |
+| `budget_analysis` | Budget allocation, efficiency, and budget-limited campaigns |
+| `geo_performance` | Geographic performance breakdown by location |
+| `run_gaql` | Execute custom GAQL queries (read-only, writes blocked) |
+| `account_health` | Quick health check with automatic anomaly detection |
+
+## Commands
 
 - `/google-ads:analyze` — Analyze campaign or account performance
 - `/google-ads:audit` — Run a comprehensive 7-dimension account audit
 - `/google-ads:optimize` — Get prioritized optimization recommendations
 
-## Available Skills
+## Key Rules
 
-- **google-ads-agent** — Full PPC management expertise with GAQL patterns
-- **security-auditor** — Security vulnerability scanning and code auditing
+1. **Write safety**: The `run_gaql` tool blocks all write operations (CREATE, UPDATE, DELETE, MUTATE). Never attempt to bypass this.
+2. **Cost formatting**: API returns micros — always divide by 1,000,000 for dollars.
+3. **Confirm before acting**: All API-calling tools require user confirmation via the policy engine.
+4. **Anomaly flags**: Automatically flag CPA spikes >20%, zero-conversion spend, CTR drops >15%, QS < 5.
+5. **Tables**: Always present data in markdown tables for clarity.
 
-## Key Principles
+## API Reference
 
-1. **Write safety**: Never execute Google Ads API mutations without explicit user confirmation
-2. **Data clarity**: Always convert micros to dollars, show CTR as percentages, format tables
-3. **Actionable output**: End every analysis with specific, prioritized next steps
-4. **Anomaly awareness**: Flag CPA spikes, CTR drops, budget depletion, and zero-conversion spend automatically
+- Google Ads API Version: v22
+- Query Language: GAQL (Google Ads Query Language)
+- Rate Limits: Basic = 15K ops/day (4 req/sec), Standard = unlimited (100 req/sec)

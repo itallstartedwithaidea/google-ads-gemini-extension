@@ -1,8 +1,8 @@
 # Google Ads Agent — Gemini CLI Extension
 
-A [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension that adds Google Ads management skills, commands, and expert context — campaign analysis, auditing, optimization, and security auditing.
+A full-featured [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension that adds **live Google Ads API access** through an MCP server, plus expert skills, commands, hooks, policies, and themes.
 
-Built from production learnings running an AI Google Ads agent at [googleadsagent.ai](https://googleadsagent.ai) — a system with 28 custom API actions and 6 sub-agents managing live Google Ads accounts via the Google Ads API v22.
+Built from production learnings running an AI Google Ads agent at [googleadsagent.ai](https://googleadsagent.ai) — 28 custom API actions, 6 sub-agents, managing real Google Ads accounts via the Google Ads API v22.
 
 ## Install
 
@@ -10,55 +10,87 @@ Built from production learnings running an AI Google Ads agent at [googleadsagen
 gemini extensions install https://github.com/itallstartedwithaidea/google-ads-gemini-extension
 ```
 
-During installation, you'll be prompted for your Google Ads API credentials (stored securely in your system keychain). If you don't have them yet, skip for now — the skills and commands still work as advisory tools without live API access.
+You'll be prompted for your Google Ads API credentials (stored securely in your system keychain). See [Getting Credentials](#getting-credentials) below.
 
-## What's Included
+## Features
 
-### Commands
+This extension implements every feature type in the Gemini CLI extension spec:
 
-| Command | What it does |
-|---------|-------------|
-| `/google-ads:analyze` | Analyze campaign or account performance — anomaly detection, trend identification, spend analysis |
-| `/google-ads:audit` | Comprehensive 7-dimension account audit with severity ratings |
-| `/google-ads:optimize` | Prioritized optimization recommendations ranked by effort vs. impact |
+| Feature | What's included |
+|---------|----------------|
+| **MCP Server** | 9 tools with live Google Ads API access (campaigns, keywords, search terms, budgets, ads, geo, custom GAQL) |
+| **Commands** | `/google-ads:analyze`, `/google-ads:audit`, `/google-ads:optimize` |
+| **Skills** | `google-ads-agent` (PPC expertise + 6 GAQL templates) and `security-auditor` (vulnerability scanning) |
+| **Context** | `GEMINI.md` — persistent API reference, tool inventory, and key rules |
+| **Hooks** | GAQL write protection + API call audit logging |
+| **Policies** | User confirmation required before API calls |
+| **Themes** | `google-ads` (dark) and `google-ads-light` — Google's design language |
+| **Settings** | 5 credential fields with keychain storage for sensitive values |
 
-### Skills
+## MCP Server Tools
 
-| Skill | Activates when |
-|-------|---------------|
-| **google-ads-agent** | User asks about campaigns, budgets, keywords, ads, PPC, ROAS, bidding, Performance Max |
-| **security-auditor** | User asks to audit security, scan for secrets, check for vulnerabilities |
+These tools let Gemini directly query your Google Ads accounts:
 
-### Context (GEMINI.md)
+| Tool | Description |
+|------|-------------|
+| `list_accounts` | List all accounts under your MCC |
+| `campaign_performance` | Campaign metrics with spend, conversions, CTR, CPC, CPA |
+| `search_terms_report` | Search terms analysis with wasted spend detection |
+| `keyword_quality` | Quality scores with component breakdowns |
+| `ad_performance` | Ad creative performance and RSA strength scores |
+| `budget_analysis` | Budget allocation, efficiency, and limited campaign detection |
+| `geo_performance` | Geographic performance by location |
+| `run_gaql` | Custom GAQL queries (read-only — writes blocked by safety) |
+| `account_health` | Quick health check with automatic anomaly detection |
 
-Persistent context loaded every session with:
-- Google Ads API v22 reference (GAQL, micros formatting, rate limits)
-- Available commands and skills summary
-- Write safety protocol (always confirm before mutations)
+### Safety
 
-## Usage Examples
+- **Read-only by default**: The `run_gaql` tool blocks all write operations (CREATE, UPDATE, DELETE, MUTATE, REMOVE)
+- **Policy engine**: All API-calling tools require user confirmation before execution
+- **Audit logging**: Every tool call is logged to `~/.gemini/logs/google-ads-agent.log`
 
-```
-# Analyze a specific campaign
-/google-ads:analyze "Brand Search campaign for Acme Corp, last 30 days"
+## Commands
+
+```bash
+# Analyze a campaign
+/google-ads:analyze "Brand Search campaign last 30 days"
 
 # Run a full account audit
-/google-ads:audit "Acme Corp Google Ads account, focus on wasted spend"
+/google-ads:audit "Acme Corp, focus on wasted spend and quality scores"
 
 # Get optimization recommendations
-/google-ads:optimize "Improve ROAS for our ecommerce campaigns"
-
-# The skills activate automatically in conversation
-> "What GAQL query would show me my top keywords by conversion rate?"
-> "Audit this codebase for security vulnerabilities"
+/google-ads:optimize "Improve ROAS for ecommerce campaigns"
 ```
+
+## Skills
+
+### Google Ads Agent
+Activates when you ask about campaigns, budgets, keywords, ads, PPC, ROAS, bidding, or Performance Max. Includes:
+- 6 GAQL query templates (campaigns, search terms, keywords, ads, PMax, geo)
+- Cost formatting rules (micros → dollars)
+- Anomaly detection thresholds
+- Write safety protocol (CEP: Confirm → Execute → Post-check)
+
+### Security Auditor
+Activates when you ask to audit security, scan for secrets, or check for vulnerabilities. Includes:
+- 10+ secret patterns (sk-, AIzaSy, ghp_, AKIA, xox, etc.)
+- Auth/authz, input validation, error handling, encryption checks
+- Severity framework (Critical/High/Medium/Low)
+
+## Themes
+
+Switch with `/theme`:
+- **google-ads** — dark theme with Google's color palette
+- **google-ads-light** — light theme matching Google Ads UI
 
 ## Extension Structure
 
 ```
 google-ads-gemini-extension/
-├── gemini-extension.json       # Manifest with settings for API credentials
+├── gemini-extension.json       # Manifest — MCP server, settings, themes
 ├── GEMINI.md                   # Persistent context (loaded every session)
+├── package.json                # Node.js dependencies
+├── server.js                   # MCP server — 9 Google Ads API tools
 ├── commands/
 │   └── google-ads/
 │       ├── analyze.toml        # /google-ads:analyze
@@ -66,40 +98,44 @@ google-ads-gemini-extension/
 │       └── optimize.toml       # /google-ads:optimize
 ├── skills/
 │   ├── google-ads-agent/
-│   │   └── SKILL.md            # PPC management expertise + GAQL patterns
+│   │   └── SKILL.md            # PPC management expertise
 │   └── security-auditor/
 │       └── SKILL.md            # Security vulnerability scanning
+├── hooks/
+│   ├── hooks.json              # Hook definitions
+│   └── log-tool-call.js        # Audit trail logger
+├── policies/
+│   └── safety.toml             # User confirmation rules
+├── LICENSE
 └── README.md
 ```
 
-## Google Ads Agent Skill Highlights
+## Getting Credentials
 
-- **6 GAQL query templates**: campaign performance, search terms, keyword quality, ad performance, PMax asset groups, geographic
-- **Cost formatting**: automatic micros → dollars conversion guidance
-- **Anomaly thresholds**: CPA spike >20%, CTR drop >15%, zero-conversion spend, quality score < 5, budget depletion
-- **Write safety (CEP)**: Confirm → Execute → Post-check for any mutation
-- **Rate limit awareness**: Basic = 15K ops/day, Standard = unlimited
+You need 5 values from 2 places:
 
-## Security Auditor Skill Highlights
+### From Google Ads (1 value)
+1. Go to [Google Ads](https://ads.google.com) → Tools & Settings → API Center
+2. Copy your **Developer Token** and **Login Customer ID** (MCC account ID)
 
-- **Secret pattern detection**: 10+ patterns (sk-, AIzaSy, ghp_, AKIA, xox, whsec_, etc.)
-- **Auth/authz checks**: session management, OAuth flows, privilege escalation
-- **Input validation**: SQL/GAQL injection, path traversal, CORS, XSS, SSRF
-- **Severity framework**: Critical / High / Medium / Low with structured report format
+### From Google Cloud Console (3 values)
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Enable the **Google Ads API**
+3. Create OAuth2 credentials (Web application type)
+4. Copy **Client ID** and **Client Secret**
 
-## Settings
+### Generate Refresh Token (1 value)
+1. Go to [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
+2. Settings → Use your own OAuth credentials → enter Client ID + Secret
+3. Authorize `https://www.googleapis.com/auth/adwords`
+4. Exchange for tokens → copy **Refresh Token**
 
-During installation, the extension prompts for these optional credentials:
+### Configure the extension
+```bash
+gemini extensions config google-ads-agent
+```
 
-| Setting | Environment Variable | Sensitive |
-|---------|---------------------|-----------|
-| Google Ads Developer Token | `GOOGLE_ADS_DEVELOPER_TOKEN` | Yes |
-| Google Ads Client ID | `GOOGLE_ADS_CLIENT_ID` | No |
-| Google Ads Client Secret | `GOOGLE_ADS_CLIENT_SECRET` | Yes |
-| Google Ads Refresh Token | `GOOGLE_ADS_REFRESH_TOKEN` | Yes |
-| Google Ads Login Customer ID | `GOOGLE_ADS_LOGIN_CUSTOMER_ID` | No |
-
-These are optional. Without them, the extension still provides expert advisory skills and commands — you just won't have live API access.
+Or re-install to be prompted again.
 
 ## Update
 
@@ -107,11 +143,21 @@ These are optional. Without them, the extension still provides expert advisory s
 gemini extensions update google-ads-agent
 ```
 
+## Local Development
+
+```bash
+git clone https://github.com/itallstartedwithaidea/google-ads-gemini-extension.git
+cd google-ads-gemini-extension
+npm install
+gemini extensions link .
+```
+
 ## Related
 
 - [google-ads-api-agent](https://github.com/itallstartedwithaidea/google-ads-api-agent) — Full Python agent with 28 API actions and 6 sub-agents
 - [googleadsagent.ai](https://googleadsagent.ai) — Live production system (Buddy) on Cloudflare
-- [Gemini CLI Extensions Docs](https://geminicli.com/docs/extensions/writing-extensions/)
+- [Gemini CLI Extension Docs](https://geminicli.com/docs/extensions/writing-extensions/)
+- [Extension Gallery](https://geminicli.com/extensions/browse/)
 
 ## License
 

@@ -1,0 +1,20 @@
+[
+  {
+    "type": "before_tool_call",
+    "toolName": "run_gaql",
+    "hook": {
+      "type": "in-process",
+      "handler": "validate-gaql"
+    },
+    "description": "Validates GAQL queries to prevent write operations (CREATE, UPDATE, DELETE, MUTATE, REMOVE)"
+  },
+  {
+    "type": "after_tool_call",
+    "toolName": "*",
+    "hook": {
+      "type": "command",
+      "command": ["node", "${extensionPath}/hooks/log-tool-call.js"]
+    },
+    "description": "Logs all Google Ads tool calls for audit trail"
+  }
+]

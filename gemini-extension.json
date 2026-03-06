@@ -1,7 +1,7 @@
 {
   "name": "google-ads-agent",
-  "version": "1.0.0",
-  "description": "Google Ads management skills, commands, and expert context for Gemini CLI — campaign analysis, auditing, optimization, and security auditing. Ported from production learnings at googleadsagent.ai.",
+  "version": "2.0.0",
+  "description": "Google Ads management for Gemini CLI — MCP server with live API tools, agent skills, commands, hooks, and custom theme. Ported from production at googleadsagent.ai.",
   "contextFileName": "GEMINI.md",
   "settings": [
     {
@@ -30,9 +30,64 @@
     },
     {
       "name": "Google Ads Login Customer ID",
-      "description": "Your MCC (Manager) account ID, format: 123-456-7890",
+      "description": "Your MCC (Manager) account ID, format: 1234567890 (no dashes)",
       "envVar": "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
       "sensitive": false
+    }
+  ],
+  "mcpServers": {
+    "googleAdsServer": {
+      "command": "node",
+      "args": ["${extensionPath}${/}server.js"],
+      "cwd": "${extensionPath}"
+    }
+  },
+  "themes": [
+    {
+      "name": "google-ads",
+      "type": "custom",
+      "background": {
+        "primary": "#1a1a2e"
+      },
+      "text": {
+        "primary": "#e8eaed",
+        "secondary": "#9aa0a6",
+        "link": "#8ab4f8"
+      },
+      "status": {
+        "success": "#81c995",
+        "warning": "#fdd663",
+        "error": "#f28b82"
+      },
+      "border": {
+        "default": "#3c4043"
+      },
+      "ui": {
+        "comment": "#9aa0a6"
+      }
+    },
+    {
+      "name": "google-ads-light",
+      "type": "custom",
+      "background": {
+        "primary": "#ffffff"
+      },
+      "text": {
+        "primary": "#202124",
+        "secondary": "#5f6368",
+        "link": "#1a73e8"
+      },
+      "status": {
+        "success": "#188038",
+        "warning": "#e37400",
+        "error": "#d93025"
+      },
+      "border": {
+        "default": "#dadce0"
+      },
+      "ui": {
+        "comment": "#5f6368"
+      }
     }
   ]
 }
