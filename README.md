@@ -4,6 +4,9 @@ A [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension that gives
 
 Built from production learnings running an AI Google Ads agent at [googleadsagent.ai](https://googleadsagent.ai) — 28 custom API actions, 6 sub-agents, managing real Google Ads accounts via the Google Ads API v22.
 
+
+<img width="1392" height="928" alt="image" src="https://github.com/user-attachments/assets/377c8d23-acc9-4f05-a0b6-95f3667cf12d" />
+
 ---
 
 ## Quick Start (5 minutes)
