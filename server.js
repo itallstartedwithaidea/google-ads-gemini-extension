@@ -127,17 +127,14 @@ function fmt(rows, formatFn) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// TOOLS
+// TOOLS — using server.tool(name, description, zodSchema, handler)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ─── list_accounts ───────────────────────────────────────────────────────────
 
 server.tool(
   "list_accounts",
-  {
-    description:
-      "List all Google Ads accounts accessible under the configured MCC.",
-  },
+  "List all Google Ads accounts accessible under the configured MCC.",
   async () => {
     try {
       checkRateLimit("list_accounts");
@@ -174,15 +171,12 @@ server.tool(
 
 server.tool(
   "campaign_performance",
+  "Campaign performance metrics — spend, conversions, clicks, impressions, CTR, CPC, CPA.",
   {
-    description:
-      "Campaign performance metrics — spend, conversions, clicks, impressions, CTR, CPC, CPA.",
-    inputSchema: {
-      customer_id: customerIdSchema,
-      date_range: dateRangeSchema,
-      status: z.enum(["ENABLED", "PAUSED", "ALL"]).default("ENABLED"),
-      limit: limitSchema.default(20),
-    },
+    customer_id: customerIdSchema,
+    date_range: dateRangeSchema,
+    status: z.enum(["ENABLED", "PAUSED", "ALL"]).default("ENABLED"),
+    limit: limitSchema.default(20),
   },
   async ({ customer_id, date_range, status, limit }) => {
     try {
@@ -229,15 +223,12 @@ server.tool(
 
 server.tool(
   "search_terms_report",
+  "Search terms that triggered ads — wasted spend detection and top performers.",
   {
-    description:
-      "Search terms that triggered ads — wasted spend detection and top performers.",
-    inputSchema: {
-      customer_id: customerIdSchema,
-      date_range: dateRangeSchema,
-      limit: limitSchema,
-      sort_by: z.enum(["cost", "conversions", "clicks", "impressions"]).default("cost"),
-    },
+    customer_id: customerIdSchema,
+    date_range: dateRangeSchema,
+    limit: limitSchema,
+    sort_by: z.enum(["cost", "conversions", "clicks", "impressions"]).default("cost"),
   },
   async ({ customer_id, date_range, limit, sort_by }) => {
     try {
@@ -289,14 +280,12 @@ server.tool(
 
 server.tool(
   "keyword_quality",
+  "Keyword quality scores with component breakdowns (creative, landing page, expected CTR).",
   {
-    description: "Keyword quality scores with component breakdowns (creative, landing page, expected CTR).",
-    inputSchema: {
-      customer_id: customerIdSchema,
-      date_range: z.enum(["LAST_7_DAYS", "LAST_14_DAYS", "LAST_30_DAYS", "LAST_90_DAYS"]).default("LAST_30_DAYS"),
-      min_impressions: z.number().default(10),
-      limit: limitSchema,
-    },
+    customer_id: customerIdSchema,
+    date_range: z.enum(["LAST_7_DAYS", "LAST_14_DAYS", "LAST_30_DAYS", "LAST_90_DAYS"]).default("LAST_30_DAYS"),
+    min_impressions: z.number().default(10),
+    limit: limitSchema,
   },
   async ({ customer_id, date_range, min_impressions, limit }) => {
     try {
@@ -346,13 +335,11 @@ server.tool(
 
 server.tool(
   "ad_performance",
+  "Ad creative performance — RSA ad strength, clicks, conversions, fatigue signals.",
   {
-    description: "Ad creative performance — RSA ad strength, clicks, conversions, fatigue signals.",
-    inputSchema: {
-      customer_id: customerIdSchema,
-      date_range: dateRangeSchema,
-      limit: limitSchema.default(30),
-    },
+    customer_id: customerIdSchema,
+    date_range: dateRangeSchema,
+    limit: limitSchema.default(30),
   },
   async ({ customer_id, date_range, limit }) => {
     try {
@@ -395,12 +382,10 @@ server.tool(
 
 server.tool(
   "budget_analysis",
+  "Budget allocation and efficiency — identifies budget-limited campaigns and misallocated spend.",
   {
-    description: "Budget allocation and efficiency — identifies budget-limited campaigns and misallocated spend.",
-    inputSchema: {
-      customer_id: customerIdSchema,
-      date_range: dateRangeSchema,
-    },
+    customer_id: customerIdSchema,
+    date_range: dateRangeSchema,
   },
   async ({ customer_id, date_range }) => {
     try {
@@ -449,13 +434,11 @@ server.tool(
 
 server.tool(
   "geo_performance",
+  "Geographic performance breakdown by location.",
   {
-    description: "Geographic performance breakdown by location.",
-    inputSchema: {
-      customer_id: customerIdSchema,
-      date_range: dateRangeSchema,
-      limit: limitSchema.default(30),
-    },
+    customer_id: customerIdSchema,
+    date_range: dateRangeSchema,
+    limit: limitSchema.default(30),
   },
   async ({ customer_id, date_range, limit }) => {
     try {
@@ -492,16 +475,14 @@ server.tool(
   }
 );
 
-// ─── device_performance (NEW — from Buddy) ──────────────────────────────────
+// ─── device_performance ──────────────────────────────────────────────────────
 
 server.tool(
   "device_performance",
+  "Performance breakdown by device (mobile, desktop, tablet) — identifies device-level optimization opportunities.",
   {
-    description: "Performance breakdown by device (mobile, desktop, tablet) — identifies device-level optimization opportunities.",
-    inputSchema: {
-      customer_id: customerIdSchema,
-      date_range: dateRangeSchema,
-    },
+    customer_id: customerIdSchema,
+    date_range: dateRangeSchema,
   },
   async ({ customer_id, date_range }) => {
     try {
@@ -547,17 +528,15 @@ server.tool(
   }
 );
 
-// ─── impression_share (NEW — from Buddy) ─────────────────────────────────────
+// ─── impression_share ────────────────────────────────────────────────────────
 
 server.tool(
   "impression_share",
+  "Impression share analysis — identifies lost opportunity from budget and rank. Shows how much traffic you're missing.",
   {
-    description: "Impression share analysis — identifies lost opportunity from budget and rank. Shows how much traffic you're missing.",
-    inputSchema: {
-      customer_id: customerIdSchema,
-      date_range: dateRangeSchema,
-      limit: limitSchema.default(20),
-    },
+    customer_id: customerIdSchema,
+    date_range: dateRangeSchema,
+    limit: limitSchema.default(20),
   },
   async ({ customer_id, date_range, limit }) => {
     try {
@@ -599,16 +578,14 @@ server.tool(
   }
 );
 
-// ─── change_history (NEW — from Buddy) ───────────────────────────────────────
+// ─── change_history ──────────────────────────────────────────────────────────
 
 server.tool(
   "change_history",
+  "Recent account changes — who changed what and when. Essential for diagnosing performance shifts.",
   {
-    description: "Recent account changes — who changed what and when. Essential for diagnosing performance shifts.",
-    inputSchema: {
-      customer_id: customerIdSchema,
-      limit: limitSchema.default(25),
-    },
+    customer_id: customerIdSchema,
+    limit: limitSchema.default(25),
   },
   async ({ customer_id, limit }) => {
     try {
@@ -647,16 +624,14 @@ server.tool(
   }
 );
 
-// ─── list_recommendations (NEW — from Buddy) ────────────────────────────────
+// ─── list_recommendations ────────────────────────────────────────────────────
 
 server.tool(
   "list_recommendations",
+  "Google's optimization recommendations for the account — with estimated impact.",
   {
-    description: "Google's optimization recommendations for the account — with estimated impact.",
-    inputSchema: {
-      customer_id: customerIdSchema,
-      limit: limitSchema.default(20),
-    },
+    customer_id: customerIdSchema,
+    limit: limitSchema.default(20),
   },
   async ({ customer_id, limit }) => {
     try {
@@ -699,18 +674,16 @@ server.tool(
   }
 );
 
-// ─── compare_performance (NEW — from Buddy) ──────────────────────────────────
+// ─── compare_performance ─────────────────────────────────────────────────────
 
 server.tool(
   "compare_performance",
+  "Compare campaign performance across two periods (e.g., this month vs last month). Shows deltas and identifies trends.",
   {
-    description: "Compare campaign performance across two periods (e.g., this month vs last month). Shows deltas and identifies trends.",
-    inputSchema: {
-      customer_id: customerIdSchema,
-      period_a: z.enum(["LAST_7_DAYS", "LAST_14_DAYS", "LAST_30_DAYS", "THIS_MONTH"]).describe("Current/recent period"),
-      period_b: z.enum(["LAST_14_DAYS", "LAST_30_DAYS", "LAST_90_DAYS", "LAST_MONTH"]).describe("Comparison period"),
-      limit: limitSchema.default(15),
-    },
+    customer_id: customerIdSchema,
+    period_a: z.enum(["LAST_7_DAYS", "LAST_14_DAYS", "LAST_30_DAYS", "THIS_MONTH"]).describe("Current/recent period"),
+    period_b: z.enum(["LAST_14_DAYS", "LAST_30_DAYS", "LAST_90_DAYS", "LAST_MONTH"]).describe("Comparison period"),
+    limit: limitSchema.default(15),
   },
   async ({ customer_id, period_a, period_b, limit }) => {
     try {
@@ -757,31 +730,29 @@ server.tool(
   }
 );
 
-// ─── calculate (NEW — from Buddy) ────────────────────────────────────────────
+// ─── calculate ───────────────────────────────────────────────────────────────
 
 server.tool(
   "calculate",
+  "Google Ads math calculator — budget projections, ROAS, CPA, conversion forecasts, impression share opportunity. No API call needed.",
   {
-    description: "Google Ads math calculator — budget projections, ROAS, CPA, conversion forecasts, impression share opportunity. No API call needed.",
-    inputSchema: {
-      calculation: z.enum([
-        "budget_projection", "roas", "cpa", "conversion_forecast", "impression_share_opportunity",
-      ]).describe("Type of calculation"),
-      inputs: z.object({
-        spend: z.number().optional().describe("Total spend in dollars"),
-        conversions: z.number().optional(),
-        conversion_value: z.number().optional().describe("Total conversion value in dollars"),
-        clicks: z.number().optional(),
-        impressions: z.number().optional(),
-        ctr: z.number().optional().describe("CTR as decimal (e.g., 0.05 for 5%)"),
-        conversion_rate: z.number().optional().describe("Conv rate as decimal"),
-        target_cpa: z.number().optional(),
-        target_roas: z.number().optional(),
-        daily_budget: z.number().optional(),
-        days: z.number().optional().default(30),
-        current_impression_share: z.number().optional().describe("Current IS as decimal"),
-      }),
-    },
+    calculation: z.enum([
+      "budget_projection", "roas", "cpa", "conversion_forecast", "impression_share_opportunity",
+    ]).describe("Type of calculation"),
+    inputs: z.object({
+      spend: z.number().optional().describe("Total spend in dollars"),
+      conversions: z.number().optional(),
+      conversion_value: z.number().optional().describe("Total conversion value in dollars"),
+      clicks: z.number().optional(),
+      impressions: z.number().optional(),
+      ctr: z.number().optional().describe("CTR as decimal (e.g., 0.05 for 5%)"),
+      conversion_rate: z.number().optional().describe("Conv rate as decimal"),
+      target_cpa: z.number().optional(),
+      target_roas: z.number().optional(),
+      daily_budget: z.number().optional(),
+      days: z.number().optional().default(30),
+      current_impression_share: z.number().optional().describe("Current IS as decimal"),
+    }),
   },
   async ({ calculation, inputs }) => {
     try {
@@ -845,12 +816,10 @@ server.tool(
 
 server.tool(
   "run_gaql",
+  "Execute a custom GAQL query (read-only). Only SELECT queries are allowed — all write operations are blocked.",
   {
-    description: "Execute a custom GAQL query (read-only). Only SELECT queries are allowed — all write operations are blocked.",
-    inputSchema: {
-      customer_id: customerIdSchema,
-      query: z.string().describe("GAQL SELECT query"),
-    },
+    customer_id: customerIdSchema,
+    query: z.string().describe("GAQL SELECT query"),
   },
   async ({ customer_id, query }) => {
     try {
@@ -877,11 +846,9 @@ server.tool(
 
 server.tool(
   "account_health",
+  "Quick health check — anomaly detection for zero conversions, budget limits, quality scores, spend drops.",
   {
-    description: "Quick health check — anomaly detection for zero conversions, budget limits, quality scores, spend drops.",
-    inputSchema: {
-      customer_id: customerIdSchema,
-    },
+    customer_id: customerIdSchema,
   },
   async ({ customer_id }) => {
     try {
