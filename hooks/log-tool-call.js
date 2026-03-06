@@ -19,12 +19,14 @@ try {
   }
 
   const data = JSON.parse(input.join(""));
-  const toolName = sanitize(data.toolName || "unknown");
+  const toolName = sanitize(data.tool_name || "unknown");
   const timestamp = new Date().toISOString();
-  const customerArg = sanitize(data.input?.customer_id || "N/A");
+  const customerArg = sanitize(data.tool_input?.customer_id || "N/A");
 
   const entry = `[${timestamp}] tool=${toolName} customer=${customerArg}\n`;
   appendFileSync(logFile, entry);
 } catch {
   // Silent fail — logging should never break tool execution
 }
+
+process.stdout.write(JSON.stringify({}));
