@@ -1,87 +1,243 @@
 # Google Ads Agent — Gemini CLI Extension
 
-A full-featured [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension that adds **live Google Ads API access** through an MCP server, plus expert skills, commands, hooks, policies, and themes.
+A [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension that gives you **live Google Ads API access** from your terminal. Ask questions about your campaigns, find wasted spend, audit accounts, get optimization recommendations — all through natural conversation.
 
 Built from production learnings running an AI Google Ads agent at [googleadsagent.ai](https://googleadsagent.ai) — 28 custom API actions, 6 sub-agents, managing real Google Ads accounts via the Google Ads API v22.
 
-## Install
+---
+
+## Quick Start (5 minutes)
+
+### Step 1: Install Node.js (if you don't have it)
+
+```bash
+# Check if you already have it
+node --version
+
+# If not, install via Homebrew (macOS)
+brew install node
+
+# Or download from https://nodejs.org (Windows/Linux/macOS)
+```
+
+### Step 2: Install Gemini CLI
+
+```bash
+npm install -g @google/gemini-cli
+```
+
+### Step 3: Get a Gemini API key (free)
+
+1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+2. Click **Create API Key**
+3. Copy it, then save it:
+
+```bash
+mkdir -p ~/.gemini
+echo 'GEMINI_API_KEY=your-key-here' > ~/.gemini/.env
+```
+
+The free tier gives you 60 requests/minute and 1,000/day — more than enough.
+
+### Step 4: Install this extension
 
 ```bash
 gemini extensions install https://github.com/itallstartedwithaidea/google-ads-gemini-extension
 ```
 
-You'll be prompted for your Google Ads API credentials (stored securely in your system keychain). See [Getting Credentials](#getting-credentials) below.
+You'll be prompted to confirm the install and enter your Google Ads credentials (see [Getting Credentials](#getting-credentials) below). Sensitive values are stored in your system keychain.
 
-## Features
+### Step 5: Start using it
+
+```bash
+gemini
+```
+
+That's it. The extension auto-loads every time. Just start asking questions:
+
+```
+> Show me my Google Ads accounts
+> How are my campaigns performing this month?
+> Which search terms are wasting money?
+> Run an account health check on account 1234567890
+> What's my ROAS if I spent $5,000 and made $18,000?
+```
+
+---
+
+## Usage Examples
+
+Once installed, type `gemini` to launch the interactive CLI. Here's what you can do:
+
+### Ask about your accounts (live API)
+
+```
+> List my Google Ads accounts
+> Show campaign performance for account 1234567890 for the last 30 days
+> What keywords have low quality scores?
+> Show me device performance breakdown — mobile vs desktop
+> Compare this month vs last month
+> What changes were made to my account recently?
+```
+
+### Find problems
+
+```
+> Run an account health check — flag anything critical
+> Show me search terms with clicks but zero conversions
+> Which campaigns are budget-limited?
+> What's my impression share? How much traffic am I missing?
+```
+
+### Do the math (no API credentials needed)
+
+```
+> I spend $75/day, CPC is $1.80, conversion rate is 3.5% — project my month
+> Calculate my ROAS: $5,000 spend, $18,500 revenue
+> What's my CPA if I spent $3,000 on 42 conversions?
+> I have 60% impression share with 10,000 impressions — what am I missing?
+```
+
+### Slash commands
+
+```
+/google-ads:analyze "Brand Search campaign last 30 days"
+/google-ads:audit "full account, focus on wasted spend"
+/google-ads:optimize "improve ROAS for ecommerce campaigns"
+```
+
+### Switch themes
+
+```
+/theme google-ads          # Dark theme with Google's color palette
+/theme google-ads-light    # Light theme matching Google Ads UI
+```
+
+---
+
+## What's Included
 
 This extension implements every feature type in the Gemini CLI extension spec:
 
 | Feature | What's included |
 |---------|----------------|
-| **MCP Server** | 9 tools with live Google Ads API access (campaigns, keywords, search terms, budgets, ads, geo, custom GAQL) |
+| **MCP Server** | 15 tools with live Google Ads API access |
 | **Commands** | `/google-ads:analyze`, `/google-ads:audit`, `/google-ads:optimize` |
-| **Skills** | `google-ads-agent` (PPC expertise + 6 GAQL templates) and `security-auditor` (vulnerability scanning) |
-| **Context** | `GEMINI.md` — persistent API reference, tool inventory, and key rules |
-| **Hooks** | GAQL write protection + API call audit logging |
-| **Policies** | User confirmation required before API calls |
-| **Themes** | `google-ads` (dark) and `google-ads-light` — Google's design language |
-| **Settings** | 5 credential fields with keychain storage for sensitive values |
+| **Skills** | `google-ads-agent` (PPC expertise + GAQL templates) and `security-auditor` (vulnerability scanning) |
+| **Context** | `GEMINI.md` — persistent API reference loaded every session |
+| **Hooks** | GAQL write-blocking + audit logging for every tool call |
+| **Policies** | User confirmation required before any API call executes |
+| **Themes** | `google-ads` (dark) and `google-ads-light` (light) |
+| **Settings** | 5 credential fields with system keychain storage for sensitive values |
 
-## MCP Server Tools
+---
+
+## MCP Server — 15 Tools
 
 These tools let Gemini directly query your Google Ads accounts:
 
 | Tool | Description |
 |------|-------------|
 | `list_accounts` | List all accounts under your MCC |
-| `campaign_performance` | Campaign metrics with spend, conversions, CTR, CPC, CPA |
+| `campaign_performance` | Spend, conversions, clicks, impressions, CTR, CPC, CPA |
 | `search_terms_report` | Search terms analysis with wasted spend detection |
-| `keyword_quality` | Quality scores with component breakdowns |
+| `keyword_quality` | Quality scores with component breakdowns (creative, landing page, expected CTR) |
 | `ad_performance` | Ad creative performance and RSA strength scores |
 | `budget_analysis` | Budget allocation, efficiency, and limited campaign detection |
-| `geo_performance` | Geographic performance by location |
-| `run_gaql` | Custom GAQL queries (read-only — writes blocked by safety) |
+| `geo_performance` | Performance breakdown by geographic location |
+| `device_performance` | Performance by device — mobile, desktop, tablet |
+| `impression_share` | Impression share and lost opportunity from budget or rank |
+| `change_history` | Recent account changes — who changed what and when |
+| `list_recommendations` | Google's optimization recommendations with estimated impact |
+| `compare_performance` | Period-over-period comparison with deltas (e.g., this month vs last) |
+| `calculate` | Google Ads math — budget projections, ROAS, CPA, conversion forecasts |
+| `run_gaql` | Custom GAQL queries (read-only — all write operations blocked) |
 | `account_health` | Quick health check with automatic anomaly detection |
 
 ### Safety
 
-- **Read-only by default**: The `run_gaql` tool blocks all write operations (CREATE, UPDATE, DELETE, MUTATE, REMOVE)
-- **Policy engine**: All API-calling tools require user confirmation before execution
+- **Read-only by default**: `run_gaql` only allows SELECT queries — CREATE, UPDATE, DELETE, MUTATE, and REMOVE are all blocked
+- **Policy engine**: Every API tool requires your confirmation before it runs
+- **Rate limiting**: 10 calls per minute per tool to prevent runaway usage
+- **Error sanitization**: Internal API details are never exposed — you get clean, actionable error messages
 - **Audit logging**: Every tool call is logged to `~/.gemini/logs/google-ads-agent.log`
+
+---
+
+## Getting Credentials
+
+You need **5 values** from **3 places**. This is a one-time setup.
+
+### From Google Ads (2 values)
+
+1. Go to [ads.google.com](https://ads.google.com)
+2. Click **Tools & Settings** (wrench icon) → **API Center**
+3. Copy your **Developer Token**
+4. Note your **Login Customer ID** — this is your MCC (Manager) account ID, the 10-digit number at the top of the page (format: `123-456-7890`)
+
+> **Don't have API access?** You'll need to [apply for a developer token](https://developers.google.com/google-ads/api/docs/get-started/dev-token). Basic access is usually approved within a few days.
+
+### From Google Cloud Console (2 values)
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com)
+2. Create a project (or select an existing one)
+3. Go to **APIs & Services** → **Library** → search for "Google Ads API" → **Enable** it
+4. Go to **APIs & Services** → **Credentials** → **Create Credentials** → **OAuth client ID**
+5. Choose **Web application** as the application type
+6. Add `https://developers.google.com/oauthplayground` as an authorized redirect URI
+7. Copy your **Client ID** and **Client Secret**
+
+### From OAuth Playground (1 value)
+
+1. Go to [developers.google.com/oauthplayground](https://developers.google.com/oauthplayground/)
+2. Click the **gear icon** (top right) → check **Use your own OAuth credentials**
+3. Paste your **Client ID** and **Client Secret** from the previous step
+4. In the left panel, find **Google Ads API v22** → select `https://www.googleapis.com/auth/adwords`
+5. Click **Authorize APIs** → sign in with the Google account that has access to your Google Ads
+6. Click **Exchange authorization code for tokens**
+7. Copy the **Refresh Token**
+
+### Enter your credentials
+
+```bash
+gemini extensions config google-ads-agent
+```
+
+It will prompt for each value. Sensitive fields (developer token, client secret, refresh token) are stored in your system keychain — not in plain text.
+
+---
 
 ## Commands
 
-```bash
-# Analyze a campaign
-/google-ads:analyze "Brand Search campaign last 30 days"
+Three slash commands for structured analysis:
 
-# Run a full account audit
+```bash
+# Deep-dive into a specific campaign or metric
+/google-ads:analyze "Brand Search campaign performance last 30 days"
+
+# Structured audit across 7 dimensions
 /google-ads:audit "Acme Corp, focus on wasted spend and quality scores"
 
-# Get optimization recommendations
+# Prioritized optimization recommendations
 /google-ads:optimize "Improve ROAS for ecommerce campaigns"
 ```
 
 ## Skills
 
 ### Google Ads Agent
-Activates when you ask about campaigns, budgets, keywords, ads, PPC, ROAS, bidding, or Performance Max. Includes:
-- 6 GAQL query templates (campaigns, search terms, keywords, ads, PMax, geo)
-- Cost formatting rules (micros → dollars)
-- Anomaly detection thresholds
-- Write safety protocol (CEP: Confirm → Execute → Post-check)
+Activates automatically when you ask about campaigns, budgets, keywords, ads, PPC, ROAS, bidding, or Performance Max. Includes:
+- GAQL query templates for common reports
+- Cost formatting (Google uses micros — the skill converts to dollars)
+- Anomaly detection thresholds (CPA spikes >20%, zero conversions, budget limits)
+- Write safety protocol: Confirm → Execute → Post-check
 
 ### Security Auditor
 Activates when you ask to audit security, scan for secrets, or check for vulnerabilities. Includes:
-- 10+ secret patterns (sk-, AIzaSy, ghp_, AKIA, xox, etc.)
+- 10+ secret patterns (sk-, AIzaSy, ghp_, AKIA, xox, whsec_, etc.)
 - Auth/authz, input validation, error handling, encryption checks
-- Severity framework (Critical/High/Medium/Low)
+- Severity framework (Critical / High / Medium / Low)
 
-## Themes
-
-Switch with `/theme`:
-- **google-ads** — dark theme with Google's color palette
-- **google-ads-light** — light theme matching Google Ads UI
+---
 
 ## Extension Structure
 
@@ -90,7 +246,7 @@ google-ads-gemini-extension/
 ├── gemini-extension.json       # Manifest — MCP server, settings, themes
 ├── GEMINI.md                   # Persistent context (loaded every session)
 ├── package.json                # Node.js dependencies
-├── server.js                   # MCP server — 9 Google Ads API tools
+├── server.js                   # MCP server — 15 Google Ads API tools
 ├── commands/
 │   └── google-ads/
 │       ├── analyze.toml        # /google-ads:analyze
@@ -102,45 +258,24 @@ google-ads-gemini-extension/
 │   └── security-auditor/
 │       └── SKILL.md            # Security vulnerability scanning
 ├── hooks/
-│   ├── hooks.json              # Hook definitions
+│   ├── hooks.json              # GAQL validation + audit logging
 │   └── log-tool-call.js        # Audit trail logger
 ├── policies/
-│   └── safety.toml             # User confirmation rules
+│   └── safety.toml             # User confirmation rules for all 15 tools
 ├── LICENSE
 └── README.md
 ```
-
-## Getting Credentials
-
-You need 5 values from 2 places:
-
-### From Google Ads (1 value)
-1. Go to [Google Ads](https://ads.google.com) → Tools & Settings → API Center
-2. Copy your **Developer Token** and **Login Customer ID** (MCC account ID)
-
-### From Google Cloud Console (3 values)
-1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Enable the **Google Ads API**
-3. Create OAuth2 credentials (Web application type)
-4. Copy **Client ID** and **Client Secret**
-
-### Generate Refresh Token (1 value)
-1. Go to [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
-2. Settings → Use your own OAuth credentials → enter Client ID + Secret
-3. Authorize `https://www.googleapis.com/auth/adwords`
-4. Exchange for tokens → copy **Refresh Token**
-
-### Configure the extension
-```bash
-gemini extensions config google-ads-agent
-```
-
-Or re-install to be prompted again.
 
 ## Update
 
 ```bash
 gemini extensions update google-ads-agent
+```
+
+## Uninstall
+
+```bash
+gemini extensions uninstall google-ads-agent
 ```
 
 ## Local Development
@@ -151,6 +286,19 @@ cd google-ads-gemini-extension
 npm install
 gemini extensions link .
 ```
+
+Changes auto-reload — no need to reinstall.
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `command not found: gemini` | Run `npm install -g @google/gemini-cli` |
+| `Please set an Auth method` | Create `~/.gemini/.env` with `GEMINI_API_KEY=your-key` ([get one free](https://aistudio.google.com/apikey)) |
+| `Missing Google Ads credentials` | Run `gemini extensions config google-ads-agent` |
+| `Authentication failed` | Your refresh token may have expired — regenerate it in [OAuth Playground](https://developers.google.com/oauthplayground/) |
+| `Permission denied` | Make sure the account is accessible under your MCC |
+| `Rate limit exceeded` | Wait 60 seconds — the extension limits to 10 calls/min per tool |
 
 ## Related
 
