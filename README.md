@@ -336,6 +336,8 @@ Changes auto-reload — no need to reinstall.
 
 ## Related
 
+- [google-ads-skills](https://github.com/itallstartedwithaidea/google-ads-skills) — Anthropic Agent Skills for Claude (analysis, audit, write, math, MCP)
+- [google-ads-mcp](https://github.com/itallstartedwithaidea/google-ads-mcp) — Python MCP server with 29 tools
 - [google-ads-api-agent](https://github.com/itallstartedwithaidea/google-ads-api-agent) — Full Python agent with 28 API actions and 6 sub-agents
 - [googleadsagent.ai](https://googleadsagent.ai) — Live production system (Buddy) on Cloudflare
 - [Gemini CLI Extension Docs](https://geminicli.com/docs/extensions/writing-extensions/)
