@@ -67,3 +67,40 @@ priority = 50
 toolName = "google-ads-agent__compare_performance"
 decision = "ask_user"
 priority = 50
+
+# ─── WRITE TOOLS — Higher priority, always require confirmation ──────────────
+
+[[rule]]
+toolName = "google-ads-agent__pause_campaign"
+decision = "ask_user"
+priority = 200
+
+[[rule]]
+toolName = "google-ads-agent__enable_campaign"
+decision = "ask_user"
+priority = 200
+
+[[rule]]
+toolName = "google-ads-agent__update_bid"
+decision = "ask_user"
+priority = 200
+
+[[rule]]
+toolName = "google-ads-agent__update_budget"
+decision = "ask_user"
+priority = 200
+
+[[rule]]
+toolName = "google-ads-agent__add_negative_keywords"
+decision = "ask_user"
+priority = 200
+
+[[rule]]
+toolName = "google-ads-agent__create_responsive_search_ad"
+decision = "ask_user"
+priority = 200
+
+[[rule]]
+toolName = "google-ads-agent__apply_recommendation"
+decision = "ask_user"
+priority = 200

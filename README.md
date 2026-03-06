@@ -95,6 +95,18 @@ Once installed, type `gemini` to launch the interactive CLI. Here's what you can
 > What's my impression share? How much traffic am I missing?
 ```
 
+### Make changes (live API — confirmation required)
+
+```
+> Pause campaign 123456789 on account 1234567890
+> Enable that campaign again
+> Update the daily budget to $75 for that campaign
+> Change the CPC bid to $2.50 on ad group 987654321
+> Add negative keywords "free, cheap, diy" to campaign 123456789
+> Create a responsive search ad for ad group 987654321
+> Apply that recommendation Google suggested
+```
+
 ### Do the math (no API credentials needed)
 
 ```
@@ -127,7 +139,7 @@ This extension implements every feature type in the Gemini CLI extension spec:
 
 | Feature | What's included |
 |---------|----------------|
-| **MCP Server** | 15 tools with live Google Ads API access |
+| **MCP Server** | 22 tools — 15 read + 7 write with live Google Ads API access |
 | **Commands** | `/google-ads:analyze`, `/google-ads:audit`, `/google-ads:optimize` |
 | **Skills** | `google-ads-agent` (PPC expertise + GAQL templates) and `security-auditor` (vulnerability scanning) |
 | **Context** | `GEMINI.md` — persistent API reference loaded every session |
@@ -138,9 +150,11 @@ This extension implements every feature type in the Gemini CLI extension spec:
 
 ---
 
-## MCP Server — 15 Tools
+## MCP Server — 22 Tools
 
-These tools let Gemini directly query your Google Ads accounts:
+### Read Tools (15)
+
+These tools query your Google Ads accounts:
 
 | Tool | Description |
 |------|-------------|
@@ -159,6 +173,20 @@ These tools let Gemini directly query your Google Ads accounts:
 | `calculate` | Google Ads math — budget projections, ROAS, CPA, conversion forecasts |
 | `run_gaql` | Custom GAQL queries (read-only — all write operations blocked) |
 | `account_health` | Quick health check with automatic anomaly detection |
+
+### Write Tools (7)
+
+These tools make changes to your Google Ads account. **Every write tool requires your explicit confirmation before executing.**
+
+| Tool | Description |
+|------|-------------|
+| `pause_campaign` | Pause an active campaign (shows current status first) |
+| `enable_campaign` | Re-enable a paused campaign |
+| `update_bid` | Change the CPC bid for an ad group (shows before/after) |
+| `update_budget` | Change a campaign's daily budget (shows before/after + monthly estimate) |
+| `add_negative_keywords` | Add negative keywords to block unwanted search terms (up to 50 at a time) |
+| `create_responsive_search_ad` | Build a new RSA with headlines and descriptions (created PAUSED for review) |
+| `apply_recommendation` | Apply one of Google's optimization suggestions |
 
 ### Safety
 
@@ -252,7 +280,7 @@ google-ads-gemini-extension/
 ├── gemini-extension.json       # Manifest — MCP server, settings, themes
 ├── GEMINI.md                   # Persistent context (loaded every session)
 ├── package.json                # Node.js dependencies
-├── server.js                   # MCP server — 15 Google Ads API tools
+├── server.js                   # MCP server — 22 Google Ads API tools (15 read + 7 write)
 ├── commands/
 │   └── google-ads/
 │       ├── analyze.toml        # /google-ads:analyze
@@ -267,7 +295,7 @@ google-ads-gemini-extension/
 │   ├── hooks.json              # GAQL validation + audit logging
 │   └── log-tool-call.js        # Audit trail logger
 ├── policies/
-│   └── safety.toml             # User confirmation rules for all 15 tools
+│   └── safety.toml             # User confirmation rules for all 22 tools (write tools at higher priority)
 ├── LICENSE
 └── README.md
 ```

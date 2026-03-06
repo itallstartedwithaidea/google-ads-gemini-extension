@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { GoogleAdsApi } from "google-ads-api";
+import { GoogleAdsApi, enums, ResourceNames } from "google-ads-api";
 
 const server = new McpServer({
   name: "google-ads-agent",
@@ -887,6 +887,337 @@ server.tool(
         ? "No major issues detected."
         : `### ${findings.length} Issues\n\n${findings.map((f, i) => `${i + 1}. ${f}`).join("\n")}`;
       return text(report);
+    } catch (e) {
+      return text(safeError(e));
+    }
+  }
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WRITE TOOLS — All require user confirmation via policy engine
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const campaignIdSchema = z.string().describe("Campaign ID (numeric, e.g., 123456789)");
+const adGroupIdSchema = z.string().describe("Ad group ID (numeric)");
+
+// ─── pause_campaign ──────────────────────────────────────────────────────────
+
+server.tool(
+  "pause_campaign",
+  "Pause an active campaign. Shows current status before executing. Requires confirmation.",
+  {
+    customer_id: customerIdSchema,
+    campaign_id: campaignIdSchema,
+  },
+  async ({ customer_id, campaign_id }) => {
+    try {
+      checkRateLimit("pause_campaign");
+      const client = getClient();
+      const cid = customer_id.replace(/-/g, "");
+      const customer = getCustomerForId(client, customer_id);
+
+      const [current] = await customer.query(`
+        SELECT campaign.name, campaign.status FROM campaign
+        WHERE campaign.id = ${campaign_id} LIMIT 1
+      `);
+      if (!current) return text(`Campaign ${campaign_id} not found.`);
+      if (current.campaign.status === "PAUSED") return text(`Campaign "${current.campaign.name}" is already paused.`);
+
+      await customer.mutateResources([{
+        entity: "campaign",
+        operation: "update",
+        resource: {
+          resource_name: `customers/${cid}/campaigns/${campaign_id}`,
+          status: enums.CampaignStatus.PAUSED,
+        },
+        update_mask: { paths: ["status"] },
+      }]);
+
+      return text(`**Paused** campaign "${current.campaign.name}" (was: ${current.campaign.status})\n\nTo re-enable: use the \`enable_campaign\` tool.`);
+    } catch (e) {
+      return text(safeError(e));
+    }
+  }
+);
+
+// ─── enable_campaign ─────────────────────────────────────────────────────────
+
+server.tool(
+  "enable_campaign",
+  "Enable a paused campaign. Shows current status before executing. Requires confirmation.",
+  {
+    customer_id: customerIdSchema,
+    campaign_id: campaignIdSchema,
+  },
+  async ({ customer_id, campaign_id }) => {
+    try {
+      checkRateLimit("enable_campaign");
+      const client = getClient();
+      const cid = customer_id.replace(/-/g, "");
+      const customer = getCustomerForId(client, customer_id);
+
+      const [current] = await customer.query(`
+        SELECT campaign.name, campaign.status FROM campaign
+        WHERE campaign.id = ${campaign_id} LIMIT 1
+      `);
+      if (!current) return text(`Campaign ${campaign_id} not found.`);
+      if (current.campaign.status === "ENABLED") return text(`Campaign "${current.campaign.name}" is already enabled.`);
+
+      await customer.mutateResources([{
+        entity: "campaign",
+        operation: "update",
+        resource: {
+          resource_name: `customers/${cid}/campaigns/${campaign_id}`,
+          status: enums.CampaignStatus.ENABLED,
+        },
+        update_mask: { paths: ["status"] },
+      }]);
+
+      return text(`**Enabled** campaign "${current.campaign.name}" (was: ${current.campaign.status})`);
+    } catch (e) {
+      return text(safeError(e));
+    }
+  }
+);
+
+// ─── update_bid ──────────────────────────────────────────────────────────────
+
+server.tool(
+  "update_bid",
+  "Update the CPC bid for an ad group. Shows current bid before changing. Bid is in dollars (e.g., 2.50).",
+  {
+    customer_id: customerIdSchema,
+    ad_group_id: adGroupIdSchema,
+    new_bid_dollars: z.number().positive().describe("New CPC bid in dollars (e.g., 2.50)"),
+  },
+  async ({ customer_id, ad_group_id, new_bid_dollars }) => {
+    try {
+      checkRateLimit("update_bid");
+      const client = getClient();
+      const cid = customer_id.replace(/-/g, "");
+      const customer = getCustomerForId(client, customer_id);
+
+      const [current] = await customer.query(`
+        SELECT ad_group.name, ad_group.cpc_bid_micros, campaign.name
+        FROM ad_group WHERE ad_group.id = ${ad_group_id} LIMIT 1
+      `);
+      if (!current) return text(`Ad group ${ad_group_id} not found.`);
+
+      const oldBid = formatMicros(current.ad_group.cpc_bid_micros || 0);
+      const newBidMicros = Math.round(new_bid_dollars * 1_000_000);
+
+      await customer.mutateResources([{
+        entity: "ad_group",
+        operation: "update",
+        resource: {
+          resource_name: `customers/${cid}/adGroups/${ad_group_id}`,
+          cpc_bid_micros: newBidMicros,
+        },
+        update_mask: { paths: ["cpc_bid_micros"] },
+      }]);
+
+      return text(`**Updated bid** for ad group "${current.ad_group.name}" (campaign: ${current.campaign.name})\n\n| | Before | After |\n|---|---|---|\n| CPC Bid | ${oldBid} | $${new_bid_dollars.toFixed(2)} |`);
+    } catch (e) {
+      return text(safeError(e));
+    }
+  }
+);
+
+// ─── update_budget ───────────────────────────────────────────────────────────
+
+server.tool(
+  "update_budget",
+  "Update a campaign's daily budget. Shows current budget before changing. Amount is in dollars.",
+  {
+    customer_id: customerIdSchema,
+    campaign_id: campaignIdSchema,
+    new_daily_budget_dollars: z.number().positive().describe("New daily budget in dollars (e.g., 50.00)"),
+  },
+  async ({ customer_id, campaign_id, new_daily_budget_dollars }) => {
+    try {
+      checkRateLimit("update_budget");
+      const client = getClient();
+      const cid = customer_id.replace(/-/g, "");
+      const customer = getCustomerForId(client, customer_id);
+
+      const [current] = await customer.query(`
+        SELECT campaign.name, campaign_budget.amount_micros, campaign_budget.id
+        FROM campaign WHERE campaign.id = ${campaign_id} LIMIT 1
+      `);
+      if (!current) return text(`Campaign ${campaign_id} not found.`);
+
+      const oldBudget = formatMicros(current.campaign_budget.amount_micros || 0);
+      const newBudgetMicros = Math.round(new_daily_budget_dollars * 1_000_000);
+      const budgetId = current.campaign_budget.id;
+
+      await customer.mutateResources([{
+        entity: "campaign_budget",
+        operation: "update",
+        resource: {
+          resource_name: `customers/${cid}/campaignBudgets/${budgetId}`,
+          amount_micros: newBudgetMicros,
+        },
+        update_mask: { paths: ["amount_micros"] },
+      }]);
+
+      const monthlyEst = `$${(new_daily_budget_dollars * 30.4).toFixed(2)}`;
+      return text(`**Updated budget** for campaign "${current.campaign.name}"\n\n| | Before | After |\n|---|---|---|\n| Daily Budget | ${oldBudget} | $${new_daily_budget_dollars.toFixed(2)} |\n| Monthly Est. | — | ${monthlyEst} |`);
+    } catch (e) {
+      return text(safeError(e));
+    }
+  }
+);
+
+// ─── add_negative_keywords ───────────────────────────────────────────────────
+
+server.tool(
+  "add_negative_keywords",
+  "Add negative keywords to a campaign to block unwanted search terms. Provide keywords as a comma-separated list.",
+  {
+    customer_id: customerIdSchema,
+    campaign_id: campaignIdSchema,
+    keywords: z.string().describe("Comma-separated negative keywords (e.g., 'free, cheap, diy')"),
+    match_type: z.enum(["BROAD", "PHRASE", "EXACT"]).default("BROAD").describe("Match type for the negative keywords"),
+  },
+  async ({ customer_id, campaign_id, keywords, match_type }) => {
+    try {
+      checkRateLimit("add_negative_keywords");
+      const client = getClient();
+      const cid = customer_id.replace(/-/g, "");
+      const customer = getCustomerForId(client, customer_id);
+
+      const [current] = await customer.query(`
+        SELECT campaign.name FROM campaign WHERE campaign.id = ${campaign_id} LIMIT 1
+      `);
+      if (!current) return text(`Campaign ${campaign_id} not found.`);
+
+      const kwList = keywords.split(",").map((k) => k.trim()).filter(Boolean);
+      if (kwList.length === 0) return text("No keywords provided.");
+      if (kwList.length > 50) return text("Maximum 50 keywords per call. Please split into batches.");
+
+      const matchTypeEnum = {
+        BROAD: enums.KeywordMatchType.BROAD,
+        PHRASE: enums.KeywordMatchType.PHRASE,
+        EXACT: enums.KeywordMatchType.EXACT,
+      }[match_type];
+
+      const operations = kwList.map((kw) => ({
+        entity: "campaign_criterion",
+        operation: "create",
+        resource: {
+          campaign: `customers/${cid}/campaigns/${campaign_id}`,
+          keyword: { text: kw, match_type: matchTypeEnum },
+          negative: true,
+        },
+      }));
+
+      await customer.mutateResources(operations);
+
+      const kwTable = kwList.map((kw) => `| ${kw} | ${match_type} | Negative |`).join("\n");
+      return text(`**Added ${kwList.length} negative keywords** to campaign "${current.campaign.name}"\n\n| Keyword | Match Type | Type |\n|---|---|---|\n${kwTable}`);
+    } catch (e) {
+      return text(safeError(e));
+    }
+  }
+);
+
+// ─── create_responsive_search_ad ─────────────────────────────────────────────
+
+server.tool(
+  "create_responsive_search_ad",
+  "Create a new Responsive Search Ad (RSA) in an ad group. Provide headlines and descriptions. The ad is created PAUSED so you can review before enabling.",
+  {
+    customer_id: customerIdSchema,
+    ad_group_id: adGroupIdSchema,
+    final_url: z.string().url().describe("Landing page URL"),
+    headlines: z.string().describe("3-15 headlines separated by | (e.g., 'Best Deals | Shop Now | Free Shipping')"),
+    descriptions: z.string().describe("2-4 descriptions separated by | (e.g., 'Save 20% on all items today. | Free shipping on orders over $50.')"),
+  },
+  async ({ customer_id, ad_group_id, final_url, headlines, descriptions }) => {
+    try {
+      checkRateLimit("create_responsive_search_ad");
+      const client = getClient();
+      const cid = customer_id.replace(/-/g, "");
+      const customer = getCustomerForId(client, customer_id);
+
+      const [currentAg] = await customer.query(`
+        SELECT ad_group.name, campaign.name FROM ad_group WHERE ad_group.id = ${ad_group_id} LIMIT 1
+      `);
+      if (!currentAg) return text(`Ad group ${ad_group_id} not found.`);
+
+      const headlineList = headlines.split("|").map((h) => h.trim()).filter(Boolean);
+      const descList = descriptions.split("|").map((d) => d.trim()).filter(Boolean);
+
+      if (headlineList.length < 3) return text("RSAs require at least 3 headlines.");
+      if (headlineList.length > 15) return text("RSAs allow a maximum of 15 headlines.");
+      if (descList.length < 2) return text("RSAs require at least 2 descriptions.");
+      if (descList.length > 4) return text("RSAs allow a maximum of 4 descriptions.");
+
+      const tooLongHeadline = headlineList.find((h) => h.length > 30);
+      if (tooLongHeadline) return text(`Headline too long (max 30 chars): "${tooLongHeadline}" (${tooLongHeadline.length} chars)`);
+      const tooLongDesc = descList.find((d) => d.length > 90);
+      if (tooLongDesc) return text(`Description too long (max 90 chars): "${tooLongDesc}" (${tooLongDesc.length} chars)`);
+
+      await customer.mutateResources([{
+        entity: "ad_group_ad",
+        operation: "create",
+        resource: {
+          ad_group: `customers/${cid}/adGroups/${ad_group_id}`,
+          status: enums.AdGroupAdStatus.PAUSED,
+          ad: {
+            responsive_search_ad: {
+              headlines: headlineList.map((h) => ({ text: h })),
+              descriptions: descList.map((d) => ({ text: d })),
+            },
+            final_urls: [final_url],
+          },
+        },
+      }]);
+
+      const headlinePreview = headlineList.map((h, i) => `| ${i + 1} | ${h} | ${h.length}/30 |`).join("\n");
+      const descPreview = descList.map((d, i) => `| ${i + 1} | ${d} | ${d.length}/90 |`).join("\n");
+      return text(`**Created RSA** (PAUSED) in ad group "${currentAg.ad_group.name}" (campaign: ${currentAg.campaign.name})\n\n**Landing page**: ${final_url}\n\n**Headlines**:\n| # | Text | Length |\n|---|---|---|\n${headlinePreview}\n\n**Descriptions**:\n| # | Text | Length |\n|---|---|---|\n${descPreview}\n\nThe ad was created **paused**. Use the Google Ads UI or enable it when ready.`);
+    } catch (e) {
+      return text(safeError(e));
+    }
+  }
+);
+
+// ─── apply_recommendation ────────────────────────────────────────────────────
+
+server.tool(
+  "apply_recommendation",
+  "Apply one of Google's optimization recommendations. Use list_recommendations first to see available ones.",
+  {
+    customer_id: customerIdSchema,
+    recommendation_resource_name: z.string().describe("Full resource name from list_recommendations (e.g., customers/123/recommendations/456)"),
+  },
+  async ({ customer_id, recommendation_resource_name }) => {
+    try {
+      checkRateLimit("apply_recommendation");
+      const client = getClient();
+      const customer = getCustomerForId(client, customer_id);
+
+      const results = await customer.query(`
+        SELECT recommendation.type, recommendation.campaign
+        FROM recommendation
+        WHERE recommendation.resource_name = '${recommendation_resource_name.replace(/'/g, "")}'
+        LIMIT 1
+      `);
+      if (!results || results.length === 0) return text("Recommendation not found. Use `list_recommendations` to get valid resource names.");
+
+      const rec = results[0].recommendation;
+      const cid = customer_id.replace(/-/g, "");
+
+      await customer.mutateResources([{
+        entity: "recommendation",
+        operation: "apply",
+        resource: {
+          resource_name: recommendation_resource_name,
+        },
+      }]);
+
+      return text(`**Applied recommendation**: ${rec.type}\nCampaign: ${rec.campaign || "Account-level"}\n\nThe change is now active in your Google Ads account.`);
     } catch (e) {
       return text(safeError(e));
     }
