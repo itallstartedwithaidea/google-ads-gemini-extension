@@ -7,7 +7,7 @@
 <img width="1196" height="1058" alt="image" src="https://github.com/user-attachments/assets/ab7b2dbf-6cdc-41ef-94b0-0288f87f3b4a" />
 
 
-[googleadsagent.ai](https://googleadsagent.ai)에서 AI Google Ads 에이전트를 운영하며 쌓은 프로덕션 경험을 바탕으로 만들었습니다 — 맞춤 API 액션 28개, 서브 에이전트 6개, Google Ads API v22로 실제 Google Ads 계정을 관리합니다.
+[googleadsagent.ai](https://googleadsagent.ai)에서 AI Google Ads 에이전트를 운영하며 쌓은 프로덕션 경험을 바탕으로 만들었습니다 — 맞춤 API 액션 28개, 서브 에이전트 6개, Google Ads API v23로 실제 Google Ads 계정을 관리합니다.
 
 
 <img width="1392" height="928" alt="image" src="https://github.com/user-attachments/assets/377c8d23-acc9-4f05-a0b6-95f3667cf12d" />
@@ -228,7 +228,7 @@ Google Ads 계정을 변경합니다. **모든 쓰기 도구는 실행 전 명�
 1. [developers.google.com/oauthplayground](https://developers.google.com/oauthplayground/)로 이동합니다.
 2. 오른쪽 위 **톱니바퀴** → **Use your own OAuth credentials** 선택
 3. 이전 단계의 **Client ID**와 **Client Secret** 붙여넣기
-4. 왼쪽 패널에서 **Google Ads API v22** 찾기 → `https://www.googleapis.com/auth/adwords` 선택
+4. 왼쪽 패널에서 **Google Ads API v23** 찾기 → `https://www.googleapis.com/auth/adwords` 선택
 5. **Authorize APIs** → Google Ads에 접근 가능한 Google 계정으로 로그인
 6. **Exchange authorization code for tokens** 클릭
 7. **Refresh Token** 복사

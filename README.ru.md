@@ -7,7 +7,7 @@
 <img width="1196" height="1058" alt="image" src="https://github.com/user-attachments/assets/ab7b2dbf-6cdc-41ef-94b0-0288f87f3b4a" />
 
 
-Создано на основе продакшн-опыта AI-агента Google Ads на [googleadsagent.ai](https://googleadsagent.ai) — 28 пользовательских действий API, 6 субагентов, управление реальными аккаунтами Google Ads через Google Ads API v22.
+Создано на основе продакшн-опыта AI-агента Google Ads на [googleadsagent.ai](https://googleadsagent.ai) — 28 пользовательских действий API, 6 субагентов, управление реальными аккаунтами Google Ads через Google Ads API v23.
 
 
 <img width="1392" height="928" alt="image" src="https://github.com/user-attachments/assets/377c8d23-acc9-4f05-a0b6-95f3667cf12d" />
@@ -228,7 +228,7 @@ gemini
 1. Откройте [developers.google.com/oauthplayground](https://developers.google.com/oauthplayground/)
 2. **Шестерёнка** (справа сверху) → отметьте **Use your own OAuth credentials**
 3. Вставьте **Client ID** и **Client Secret** с предыдущего шага
-4. В левой панели найдите **Google Ads API v22** → выберите `https://www.googleapis.com/auth/adwords`
+4. В левой панели найдите **Google Ads API v23** → выберите `https://www.googleapis.com/auth/adwords`
 5. **Authorize APIs** → войдите Google-аккаунтом с доступом к Google Ads
 6. **Exchange authorization code for tokens**
 7. Скопируйте **Refresh Token**

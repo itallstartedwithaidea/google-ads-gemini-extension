@@ -7,7 +7,7 @@ Een [Gemini CLI](https://github.com/google-gemini/gemini-cli)-extensie die je **
 <img width="1196" height="1058" alt="image" src="https://github.com/user-attachments/assets/ab7b2dbf-6cdc-41ef-94b0-0288f87f3b4a" />
 
 
-Gebouwd op productie-inzichten van een AI Google Ads-agent op [googleadsagent.ai](https://googleadsagent.ai) — 28 aangepaste API-acties, 6 subagents, beheer van echte Google Ads-accounts via de Google Ads API v22.
+Gebouwd op productie-inzichten van een AI Google Ads-agent op [googleadsagent.ai](https://googleadsagent.ai) — 28 aangepaste API-acties, 6 subagents, beheer van echte Google Ads-accounts via de Google Ads API v23.
 
 
 <img width="1392" height="928" alt="image" src="https://github.com/user-attachments/assets/377c8d23-acc9-4f05-a0b6-95f3667cf12d" />
@@ -228,7 +228,7 @@ Je hebt **5 waarden** uit **3 plekken** nodig. Eenmalige setup.
 1. Ga naar [developers.google.com/oauthplayground](https://developers.google.com/oauthplayground/)
 2. Klik op het **tandwielpictogram** (rechtsboven) → vink **Use your own OAuth credentials** aan
 3. Plak je **Client ID** en **Client Secret** van de vorige stap
-4. Zoek in het linkerpaneel **Google Ads API v22** → selecteer `https://www.googleapis.com/auth/adwords`
+4. Zoek in het linkerpaneel **Google Ads API v23** → selecteer `https://www.googleapis.com/auth/adwords`
 5. Klik op **Authorize APIs** → log in met het Google-account dat toegang heeft tot Google Ads
 6. Klik op **Exchange authorization code for tokens**
 7. Kopieer de **Refresh Token**

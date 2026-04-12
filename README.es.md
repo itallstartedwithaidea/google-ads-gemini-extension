@@ -7,7 +7,7 @@ Una extensión de [Gemini CLI](https://github.com/google-gemini/gemini-cli) que 
 <img width="1196" height="1058" alt="image" src="https://github.com/user-attachments/assets/ab7b2dbf-6cdc-41ef-94b0-0288f87f3b4a" />
 
 
-Construida a partir de la experiencia en producción de un agente de Google Ads con IA en [googleadsagent.ai](https://googleadsagent.ai): 28 acciones personalizadas de la API, 6 subagentes y gestión de cuentas reales de Google Ads mediante la API de Google Ads v22.
+Construida a partir de la experiencia en producción de un agente de Google Ads con IA en [googleadsagent.ai](https://googleadsagent.ai): 28 acciones personalizadas de la API, 6 subagentes y gestión de cuentas reales de Google Ads mediante la API de Google Ads v23.
 
 
 <img width="1392" height="928" alt="image" src="https://github.com/user-attachments/assets/377c8d23-acc9-4f05-a0b6-95f3667cf12d" />
@@ -228,7 +228,7 @@ Necesitas **5 valores** de **3 sitios**. Es una configuración única.
 1. Ve a [developers.google.com/oauthplayground](https://developers.google.com/oauthplayground/)
 2. Haz clic en el **icono de engranaje** (arriba a la derecha) → marca **Use your own OAuth credentials**
 3. Pega tu **Client ID** y **Client Secret** del paso anterior
-4. En el panel izquierdo, busca **Google Ads API v22** → selecciona `https://www.googleapis.com/auth/adwords`
+4. En el panel izquierdo, busca **Google Ads API v23** → selecciona `https://www.googleapis.com/auth/adwords`
 5. Haz clic en **Authorize APIs** → inicia sesión con la cuenta de Google que tenga acceso a Google Ads
 6. Haz clic en **Exchange authorization code for tokens**
 7. Copia el **Refresh Token**

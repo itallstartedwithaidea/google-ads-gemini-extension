@@ -7,7 +7,7 @@
 <img width="1196" height="1058" alt="image" src="https://github.com/user-attachments/assets/ab7b2dbf-6cdc-41ef-94b0-0288f87f3b4a" />
 
 
-基于在 [googleadsagent.ai](https://googleadsagent.ai) 运行 AI Google Ads 代理的生产经验构建 — 28 个自定义 API 操作、6 个子代理，通过 Google Ads API v22 管理真实 Google Ads 账号。
+基于在 [googleadsagent.ai](https://googleadsagent.ai) 运行 AI Google Ads 代理的生产经验构建 — 28 个自定义 API 操作、6 个子代理，通过 Google Ads API v23 管理真实 Google Ads 账号。
 
 
 <img width="1392" height="928" alt="image" src="https://github.com/user-attachments/assets/377c8d23-acc9-4f05-a0b6-95f3667cf12d" />
@@ -228,7 +228,7 @@ gemini
 1. 打开 [developers.google.com/oauthplayground](https://developers.google.com/oauthplayground/)
 2. 点击右上角**齿轮** → 勾选 **Use your own OAuth credentials**
 3. 粘贴上一步的 **Client ID** 与 **Client Secret**
-4. 在左栏找到 **Google Ads API v22** → 选择 `https://www.googleapis.com/auth/adwords`
+4. 在左栏找到 **Google Ads API v23** → 选择 `https://www.googleapis.com/auth/adwords`
 5. 点击 **Authorize APIs** → 使用有权访问 Google Ads 的 Google 账号登录
 6. 点击 **Exchange authorization code for tokens**
 7. 复制 **Refresh Token**
