@@ -41,6 +41,6 @@ These tools connect directly to the Google Ads API:
 
 ## API Reference
 
-- Google Ads API Version: v22
+- Google Ads API Version: v23
 - Query Language: GAQL
 - Authentication: OAuth 2.0 with refresh tokens
