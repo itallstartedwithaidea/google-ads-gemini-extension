@@ -1,5 +1,7 @@
 # Google Ads Agent — Gemini CLI Extension
 
+**Languages:** [English](README.md) · [Français](README.fr.md) · [Español](README.es.md) · [中文](README.zh.md) · [Nederlands](README.nl.md) · [Русский](README.ru.md) · [한국어](README.ko.md)
+
 A [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension that gives you **live Google Ads API access** from your terminal. Ask questions about your campaigns, find wasted spend, audit accounts, get optimization recommendations — all through natural conversation.
 
 <img width="1196" height="1058" alt="image" src="https://github.com/user-attachments/assets/ab7b2dbf-6cdc-41ef-94b0-0288f87f3b4a" />
