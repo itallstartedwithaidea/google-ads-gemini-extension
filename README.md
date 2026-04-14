@@ -1,16 +1,8 @@
 # Google Ads Agent — Gemini CLI Extension
 
-**Languages:** [English](README.md) · [Français](README.fr.md) · [Español](README.es.md) · [中文](README.zh.md) · [Nederlands](README.nl.md) · [Русский](README.ru.md) · [한국어](README.ko.md)
-
 A [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension that gives you **live Google Ads API access** from your terminal. Ask questions about your campaigns, find wasted spend, audit accounts, get optimization recommendations — all through natural conversation.
 
-<img width="1196" height="1058" alt="image" src="https://github.com/user-attachments/assets/ab7b2dbf-6cdc-41ef-94b0-0288f87f3b4a" />
-
-
-Built from production learnings running an AI Google Ads agent at [googleadsagent.ai](https://googleadsagent.ai) — 28 custom API actions, 6 sub-agents, managing real Google Ads accounts via the Google Ads API v23.
-
-
-<img width="1392" height="928" alt="image" src="https://github.com/user-attachments/assets/377c8d23-acc9-4f05-a0b6-95f3667cf12d" />
+Built from production learnings running an AI Google Ads agent at [googleadsagent.ai](https://googleadsagent.ai) — 28 custom API actions, 6 sub-agents, managing real Google Ads accounts via the Google Ads API v22.
 
 ---
 
@@ -228,7 +220,7 @@ You need **5 values** from **3 places**. This is a one-time setup.
 1. Go to [developers.google.com/oauthplayground](https://developers.google.com/oauthplayground/)
 2. Click the **gear icon** (top right) → check **Use your own OAuth credentials**
 3. Paste your **Client ID** and **Client Secret** from the previous step
-4. In the left panel, find **Google Ads API v23** → select `https://www.googleapis.com/auth/adwords`
+4. In the left panel, find **Google Ads API v22** → select `https://www.googleapis.com/auth/adwords`
 5. Click **Authorize APIs** → sign in with the Google account that has access to your Google Ads
 6. Click **Exchange authorization code for tokens**
 7. Copy the **Refresh Token**
@@ -338,8 +330,6 @@ Changes auto-reload — no need to reinstall.
 
 ## Related
 
-- [google-ads-skills](https://github.com/itallstartedwithaidea/google-ads-skills) — Anthropic Agent Skills for Claude (analysis, audit, write, math, MCP)
-- [google-ads-mcp](https://github.com/itallstartedwithaidea/google-ads-mcp) — Python MCP server with 29 tools
 - [google-ads-api-agent](https://github.com/itallstartedwithaidea/google-ads-api-agent) — Full Python agent with 28 API actions and 6 sub-agents
 - [googleadsagent.ai](https://googleadsagent.ai) — Live production system (Buddy) on Cloudflare
 - [Gemini CLI Extension Docs](https://geminicli.com/docs/extensions/writing-extensions/)
