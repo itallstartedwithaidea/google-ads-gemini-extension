@@ -47,8 +47,8 @@ function safeError(e) {
     return "Google Ads API rate limit hit. Wait a few seconds and retry.";
   if (msg.includes("invalid_customer_id"))
     return "Invalid customer ID format. Use a 10-digit ID (e.g., 1234567890).";
-  console.error("[google-ads-agent]", e);
-  return "An unexpected error occurred. Check that your credentials and customer ID are correct.";
+  console.error("[google-ads-agent]", e.message || e);
+  return `An unexpected error occurred: ${(e.message || String(e)).slice(0, 200)}. Check that your credentials and customer ID are correct.`;
 }
 
 // ─── Client Setup ────────────────────────────────────────────────────────────
@@ -107,14 +107,127 @@ const dateRangeSchema = z
 
 const limitSchema = z.number().min(1).max(200).default(50);
 
+// ─── Enum Labels ─────────────────────────────────────────────────────────────
+
+const STATUS_LABELS = {
+  0: "UNSPECIFIED", 1: "UNKNOWN", 2: "ENABLED", 3: "PAUSED", 4: "REMOVED",
+  UNSPECIFIED: "UNSPECIFIED", UNKNOWN: "UNKNOWN", ENABLED: "ENABLED", PAUSED: "PAUSED", REMOVED: "REMOVED",
+};
+
+const DEVICE_LABELS = {
+  0: "UNSPECIFIED", 1: "UNKNOWN", 2: "MOBILE", 3: "DESKTOP", 4: "TABLET", 5: "CONNECTED_TV", 6: "OTHER",
+  UNSPECIFIED: "UNSPECIFIED", UNKNOWN: "UNKNOWN", MOBILE: "MOBILE", DESKTOP: "DESKTOP", TABLET: "TABLET", CONNECTED_TV: "CONNECTED_TV", OTHER: "OTHER",
+};
+
+const BID_STRATEGY_LABELS = {
+  0: "UNSPECIFIED", 1: "UNKNOWN", 2: "COMMISSION", 3: "ENHANCED_CPC", 4: "INVALID",
+  5: "MANUAL_CPA", 6: "MANUAL_CPC", 7: "MANUAL_CPM", 8: "MANUAL_CPV",
+  9: "MAXIMIZE_CONVERSIONS", 10: "MAXIMIZE_CONVERSION_VALUE", 11: "PAGE_ONE_PROMOTED",
+  12: "PERCENT_CPC", 13: "TARGET_CPA", 14: "TARGET_CPM", 15: "TARGET_IMPRESSION_SHARE",
+  16: "TARGET_OUTRANK_SHARE", 17: "TARGET_ROAS", 18: "TARGET_SPEND",
+  UNSPECIFIED: "UNSPECIFIED", UNKNOWN: "UNKNOWN", COMMISSION: "COMMISSION",
+  ENHANCED_CPC: "ENHANCED_CPC", MANUAL_CPC: "MANUAL_CPC", MANUAL_CPM: "MANUAL_CPM",
+  MANUAL_CPV: "MANUAL_CPV", MAXIMIZE_CONVERSIONS: "MAXIMIZE_CONVERSIONS",
+  MAXIMIZE_CONVERSION_VALUE: "MAXIMIZE_CONVERSION_VALUE", TARGET_CPA: "TARGET_CPA",
+  TARGET_IMPRESSION_SHARE: "TARGET_IMPRESSION_SHARE", TARGET_ROAS: "TARGET_ROAS",
+  TARGET_SPEND: "TARGET_SPEND", PERCENT_CPC: "PERCENT_CPC",
+};
+
+const MATCH_TYPE_LABELS = {
+  0: "UNSPECIFIED", 1: "UNKNOWN", 2: "EXACT", 3: "PHRASE", 4: "BROAD",
+  UNSPECIFIED: "UNSPECIFIED", UNKNOWN: "UNKNOWN", EXACT: "EXACT", PHRASE: "PHRASE", BROAD: "BROAD",
+};
+
+const AD_TYPE_LABELS = {
+  0: "UNSPECIFIED", 2: "TEXT_AD", 3: "EXPANDED_TEXT_AD", 6: "HOTEL_AD",
+  7: "SHOPPING_SMART_AD", 12: "IMAGE_AD", 13: "VIDEO_AD", 14: "VIDEO_RESPONSIVE_AD",
+  15: "RESPONSIVE_SEARCH_AD", 16: "LEGACY_RESPONSIVE_DISPLAY_AD",
+  17: "APP_AD", 19: "LEGACY_APP_INSTALL_AD", 20: "RESPONSIVE_DISPLAY_AD",
+  21: "LOCAL_AD", 22: "HTML5_UPLOAD_AD", 23: "DYNAMIC_HTML5_AD",
+  24: "APP_ENGAGEMENT_AD", 25: "SHOPPING_COMPARISON_LISTING_AD",
+  27: "VIDEO_BUMPER_AD", 29: "VIDEO_NON_SKIPPABLE_IN_STREAM_AD",
+  31: "SMART_CAMPAIGN_AD", 33: "CALL_AD", 34: "APP_PRE_REGISTRATION_AD",
+  36: "DISCOVERY_MULTI_ASSET_AD", 37: "DISCOVERY_CAROUSEL_AD",
+  38: "TRAVEL_AD", 39: "DISCOVERY_VIDEO_RESPONSIVE_AD",
+  40: "MULTIMEDIA_AD", 42: "DEMAND_GEN_VIDEO_RESPONSIVE_AD",
+};
+
+const AD_STRENGTH_LABELS = {
+  0: "UNSPECIFIED", 1: "UNKNOWN", 2: "PENDING", 3: "NO_ADS", 4: "POOR",
+  5: "AVERAGE", 6: "GOOD", 7: "EXCELLENT",
+  UNSPECIFIED: "UNSPECIFIED", UNKNOWN: "UNKNOWN", PENDING: "PENDING",
+  NO_ADS: "NO_ADS", POOR: "POOR", AVERAGE: "AVERAGE", GOOD: "GOOD", EXCELLENT: "EXCELLENT",
+};
+
+const GEO_LOCATION_LABELS = {
+  2004: "Afghanistan", 2008: "Albania", 2012: "Algeria", 2020: "Andorra",
+  2024: "Angola", 2032: "Argentina", 2036: "Australia", 2040: "Austria",
+  2050: "Bangladesh", 2056: "Belgium", 2076: "Brazil", 2100: "Bulgaria",
+  2124: "Canada", 2152: "Chile", 2156: "China", 2170: "Colombia",
+  2188: "Costa Rica", 2191: "Croatia", 2196: "Cyprus", 2203: "Czech Republic",
+  2208: "Denmark", 2218: "Ecuador", 2818: "Egypt", 2233: "Estonia",
+  2246: "Finland", 2250: "France", 2276: "Germany", 2300: "Greece",
+  2320: "Guatemala", 2344: "Hong Kong", 2348: "Hungary", 2352: "Iceland",
+  2356: "India", 2360: "Indonesia", 2364: "Iran", 2368: "Iraq",
+  2372: "Ireland", 2376: "Israel", 2380: "Italy", 2392: "Japan",
+  2398: "Kazakhstan", 2404: "Kenya", 2410: "South Korea", 2414: "Kuwait",
+  2422: "Lebanon", 2428: "Latvia", 2440: "Lithuania", 2442: "Luxembourg",
+  2446: "Macao", 2458: "Malaysia", 2484: "Mexico", 2504: "Morocco",
+  2528: "Netherlands", 2554: "New Zealand", 2566: "Nigeria", 2578: "Norway",
+  2586: "Pakistan", 2591: "Panama", 2604: "Peru", 2608: "Philippines",
+  2616: "Poland", 2620: "Portugal", 2630: "Puerto Rico", 2634: "Qatar",
+  2642: "Romania", 2643: "Russia", 2682: "Saudi Arabia", 2688: "Serbia",
+  2702: "Singapore", 2703: "Slovakia", 2704: "Vietnam", 2705: "Slovenia",
+  2710: "South Africa", 2724: "Spain", 2752: "Sweden", 2756: "Switzerland",
+  2158: "Taiwan", 2764: "Thailand", 2784: "UAE", 2792: "Turkey",
+  2804: "Ukraine", 2826: "United Kingdom", 2840: "United States",
+  2858: "Uruguay", 2862: "Venezuela",
+};
+
+const LOCATION_TYPE_LABELS = {
+  0: "UNSPECIFIED", 1: "UNKNOWN", 2: "AREA_OF_INTEREST", 3: "LOCATION_OF_PRESENCE",
+  AREA_OF_INTEREST: "Area of Interest", LOCATION_OF_PRESENCE: "Location of Presence",
+};
+
+function labelStatus(v) { return STATUS_LABELS[v] || String(v); }
+function labelDevice(v) { return DEVICE_LABELS[v] || String(v); }
+function labelBidStrategy(v) { return BID_STRATEGY_LABELS[v] || String(v); }
+function labelMatchType(v) { return MATCH_TYPE_LABELS[v] || String(v); }
+function labelAdType(v) { return AD_TYPE_LABELS[v] || String(v); }
+function labelAdStrength(v) { return AD_STRENGTH_LABELS[v] || String(v); }
+function labelGeo(v) { return GEO_LOCATION_LABELS[v] || String(v); }
+function labelLocationType(v) { return LOCATION_TYPE_LABELS[v] || String(v); }
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatMicros(micros) {
-  return `$${(Number(micros) / 1_000_000).toFixed(2)}`;
+  const n = Number(micros);
+  if (!isFinite(n)) return "$0.00";
+  return `$${(n / 1_000_000).toFixed(2)}`;
 }
 
 function formatPercent(value) {
-  return `${(Number(value) * 100).toFixed(2)}%`;
+  const n = Number(value);
+  if (!isFinite(n)) return "0.00%";
+  return `${(n * 100).toFixed(2)}%`;
+}
+
+function safeCtr(clicks, impressions) {
+  const c = Number(clicks), i = Number(impressions);
+  if (!isFinite(c) || !isFinite(i) || i === 0) return "0.00%";
+  return `${((c / i) * 100).toFixed(2)}%`;
+}
+
+function safeCpc(costMicros, clicks) {
+  const cost = Number(costMicros), c = Number(clicks);
+  if (!isFinite(cost) || !isFinite(c) || c === 0) return "$0.00";
+  return formatMicros(cost / c);
+}
+
+function safeCpa(costMicros, conversions) {
+  const cost = Number(costMicros), conv = Number(conversions);
+  if (!isFinite(cost) || !isFinite(conv) || conv === 0) return "—";
+  return formatMicros(cost / conv);
 }
 
 function text(str) {
@@ -206,8 +319,7 @@ server.tool(
           const body = rows
             .map((r) => {
               const m = r.metrics;
-              const cpa = Number(m.conversions) > 0 ? formatMicros(Number(m.cost_micros) / Number(m.conversions)) : "—";
-              return `| ${r.campaign.name} | ${r.campaign.status} | ${formatMicros(m.cost_micros)} | ${Number(m.conversions).toFixed(1)} | ${m.clicks} | ${m.impressions} | ${formatPercent(m.ctr)} | ${formatMicros(m.average_cpc)} | ${cpa} |`;
+              return `| ${r.campaign.name} | ${labelStatus(r.campaign.status)} | ${formatMicros(m.cost_micros)} | ${Number(m.conversions || 0).toFixed(1)} | ${m.clicks || 0} | ${m.impressions || 0} | ${safeCtr(m.clicks, m.impressions)} | ${safeCpc(m.cost_micros, m.clicks)} | ${safeCpa(m.cost_micros, m.conversions)} |`;
             })
             .join("\n");
           return `Campaign Performance (${date_range}) — ${rows.length} campaigns\n\n**Totals**: ${formatMicros(totalSpend)} spend, ${totalConv.toFixed(1)} conversions\n\n${header}\n${body}`;
@@ -259,8 +371,7 @@ server.tool(
           const body = rows
             .map((r) => {
               const m = r.metrics;
-              const cpa = Number(m.conversions) > 0 ? formatMicros(Number(m.cost_micros) / Number(m.conversions)) : "—";
-              return `| ${r.search_term_view.search_term} | ${r.campaign.name} | ${m.clicks} | ${Number(m.conversions).toFixed(1)} | ${formatMicros(m.cost_micros)} | ${formatPercent(m.ctr)} | ${cpa} |`;
+              return `| ${r.search_term_view.search_term} | ${r.campaign.name} | ${m.clicks || 0} | ${Number(m.conversions || 0).toFixed(1)} | ${formatMicros(m.cost_micros)} | ${safeCtr(m.clicks, m.impressions)} | ${safeCpa(m.cost_micros, m.conversions)} |`;
             })
             .join("\n");
           let summary = `Search Terms (${date_range}) — ${rows.length} terms\n\n`;
@@ -317,7 +428,7 @@ server.tool(
               const kw = r.ad_group_criterion;
               const qi = kw.quality_info || {};
               const qs = qi.quality_score ?? "—";
-              return `| ${kw.keyword.text} | ${kw.keyword.match_type} | ${qs}/10 | ${qi.creative_quality_score || "—"} | ${qi.post_click_quality_score || "—"} | ${qi.search_predicted_ctr || "—"} | ${r.campaign.name} | ${r.metrics.impressions} | ${formatMicros(r.metrics.cost_micros)} |`;
+              return `| ${kw.keyword.text} | ${labelMatchType(kw.keyword.match_type)} | ${qs}/10 | ${qi.creative_quality_score || "—"} | ${qi.post_click_quality_score || "—"} | ${qi.search_predicted_ctr || "—"} | ${r.campaign.name} | ${r.metrics.impressions} | ${formatMicros(r.metrics.cost_micros)} |`;
             })
             .join("\n");
           let summary = `Keyword Quality (${date_range}) — ${rows.length} keywords\n\n`;
@@ -366,7 +477,7 @@ server.tool(
             .map((r) => {
               const ad = r.ad_group_ad;
               const m = r.metrics;
-              return `| ${ad.ad.id} | ${ad.ad.type} | ${ad.ad_strength} | ${r.campaign.name} | ${r.ad_group.name} | ${m.impressions} | ${m.clicks} | ${Number(m.conversions).toFixed(1)} | ${formatMicros(m.cost_micros)} | ${formatPercent(m.ctr)} |`;
+              return `| ${ad.ad.id} | ${labelAdType(ad.ad.type)} | ${labelAdStrength(ad.ad_strength)} | ${r.campaign.name} | ${r.ad_group.name} | ${m.impressions || 0} | ${m.clicks || 0} | ${Number(m.conversions || 0).toFixed(1)} | ${formatMicros(m.cost_micros)} | ${safeCtr(m.clicks, m.impressions)} |`;
             })
             .join("\n");
           return `Ad Performance (${date_range}) — ${rows.length} ads\n\n${header}\n${body}`;
@@ -416,7 +527,7 @@ server.tool(
               const pct = totalSpend > 0 ? ((Number(m.cost_micros) / totalSpend) * 100).toFixed(1) : "0";
               const roas = Number(m.cost_micros) > 0 ? (Number(m.conversions_value) / (Number(m.cost_micros) / 1_000_000)).toFixed(2) : "—";
               const limited = b.has_recommended_budget ? `Yes → ${formatMicros(b.recommended_budget_amount_micros)}` : "No";
-              return `| ${r.campaign.name} | ${formatMicros(b.amount_micros)} | ${formatMicros(m.cost_micros)} | ${pct}% | ${Number(m.conversions).toFixed(1)} | ${roas}x | ${r.campaign.bidding_strategy_type} | ${limited} |`;
+              return `| ${r.campaign.name} | ${formatMicros(b.amount_micros)} | ${formatMicros(m.cost_micros)} | ${pct}% | ${Number(m.conversions || 0).toFixed(1)} | ${roas}x | ${labelBidStrategy(r.campaign.bidding_strategy_type)} | ${limited} |`;
             })
             .join("\n");
           let summary = `Budget Analysis (${date_range}) — ${rows.length} campaigns\n\n**Total spend**: ${formatMicros(totalSpend)}\n`;
@@ -458,12 +569,14 @@ server.tool(
       `);
       return text(
         fmt(results, (rows) => {
-          const header = "| Location ID | Type | Campaign | Impr | Clicks | Conv | Spend | CTR | CPA |\n|---|---|---|---|---|---|---|---|---|";
+          const header = "| Location | Type | Campaign | Impr | Clicks | Conv | Spend | CTR | CPA |\n|---|---|---|---|---|---|---|---|---|";
           const body = rows
             .map((r) => {
               const m = r.metrics;
-              const cpa = Number(m.conversions) > 0 ? formatMicros(Number(m.cost_micros) / Number(m.conversions)) : "—";
-              return `| ${r.geographic_view.country_criterion_id} | ${r.geographic_view.location_type} | ${r.campaign.name} | ${m.impressions} | ${m.clicks} | ${Number(m.conversions).toFixed(1)} | ${formatMicros(m.cost_micros)} | ${formatPercent(m.ctr)} | ${cpa} |`;
+              const locId = r.geographic_view.country_criterion_id;
+              const locName = labelGeo(locId);
+              const locDisplay = locName !== String(locId) ? locName : `ID:${locId}`;
+              return `| ${locDisplay} | ${labelLocationType(r.geographic_view.location_type)} | ${r.campaign.name} | ${m.impressions || 0} | ${m.clicks || 0} | ${Number(m.conversions || 0).toFixed(1)} | ${formatMicros(m.cost_micros)} | ${safeCtr(m.clicks, m.impressions)} | ${safeCpa(m.cost_micros, m.conversions)} |`;
             })
             .join("\n");
           return `Geographic Performance (${date_range})\n\n${header}\n${body}`;
@@ -514,9 +627,7 @@ server.tool(
           const body = Object.entries(byDevice)
             .sort((a, b) => b[1].spend - a[1].spend)
             .map(([device, d]) => {
-              const ctr = d.impr > 0 ? ((d.clicks / d.impr) * 100).toFixed(2) + "%" : "—";
-              const cpa = d.conv > 0 ? formatMicros(d.spend / d.conv) : "—";
-              return `| ${device} | ${formatMicros(d.spend)} | ${d.conv.toFixed(1)} | ${d.clicks} | ${d.impr} | ${ctr} | ${cpa} |`;
+              return `| ${labelDevice(device)} | ${formatMicros(d.spend)} | ${d.conv.toFixed(1)} | ${d.clicks} | ${d.impr} | ${safeCtr(d.clicks, d.impr)} | ${d.conv > 0 ? formatMicros(d.spend / d.conv) : "—"} |`;
             })
             .join("\n");
           return `Device Performance (${date_range})\n\n${header}\n${body}`;
@@ -566,7 +677,7 @@ server.tool(
               const is = m.search_impression_share ? (Number(m.search_impression_share) * 100).toFixed(1) + "%" : "—";
               const lb = m.search_budget_lost_impression_share ? (Number(m.search_budget_lost_impression_share) * 100).toFixed(1) + "%" : "—";
               const lr = m.search_rank_lost_impression_share ? (Number(m.search_rank_lost_impression_share) * 100).toFixed(1) + "%" : "—";
-              return `| ${r.campaign.name} | ${is} | ${lb} | ${lr} | ${formatMicros(m.cost_micros)} | ${Number(m.conversions).toFixed(1)} |`;
+              return `| ${r.campaign.name} | ${is} | ${lb} | ${lr} | ${formatMicros(m.cost_micros)} | ${Number(m.conversions || 0).toFixed(1)} |`;
             })
             .join("\n");
           return `Impression Share (${date_range})\n\n${header}\n${body}`;
@@ -638,34 +749,68 @@ server.tool(
       checkRateLimit("list_recommendations");
       const client = getClient();
       const customer = getCustomerForId(client, customer_id);
-      const results = await customer.query(`
-        SELECT recommendation.type, recommendation.impact.base_metrics.impressions,
-               recommendation.impact.base_metrics.clicks,
-               recommendation.impact.base_metrics.cost_micros,
-               recommendation.impact.potential_metrics.impressions,
-               recommendation.impact.potential_metrics.clicks,
-               recommendation.impact.potential_metrics.cost_micros,
-               recommendation.campaign, recommendation.dismissed
-        FROM recommendation
-        WHERE recommendation.dismissed = FALSE
-        LIMIT ${limit}
-      `);
+
+      let results;
+      try {
+        results = await customer.query(`
+          SELECT recommendation.type,
+                 recommendation.impact.base_metrics.impressions,
+                 recommendation.impact.base_metrics.clicks,
+                 recommendation.impact.base_metrics.cost_micros,
+                 recommendation.impact.potential_metrics.impressions,
+                 recommendation.impact.potential_metrics.clicks,
+                 recommendation.impact.potential_metrics.cost_micros,
+                 recommendation.campaign_budget, recommendation.campaign
+          FROM recommendation
+          LIMIT ${limit}
+        `);
+      } catch (queryErr) {
+        console.warn("[list_recommendations] Rich query failed, trying simple:", queryErr.message);
+        try {
+          results = await customer.query(`
+            SELECT recommendation.type, recommendation.campaign
+            FROM recommendation
+            LIMIT ${limit}
+          `);
+        } catch (fallbackErr) {
+          console.warn("[list_recommendations] Simple query also failed:", fallbackErr.message);
+          return text("No recommendations available for this account.");
+        }
+      }
+      if (!results || results.length === 0) {
+        return text("No recommendations available for this account at this time.");
+      }
+
       return text(
         fmt(results, (rows) => {
-          const header = "| Type | Est. Impr Lift | Est. Click Lift | Est. Cost Change | Campaign |\n|---|---|---|---|---|";
-          const body = rows
-            .map((r) => {
-              const rec = r.recommendation;
-              const impact = rec.impact || {};
-              const base = impact.base_metrics || {};
-              const pot = impact.potential_metrics || {};
-              const imprLift = Number(pot.impressions || 0) - Number(base.impressions || 0);
-              const clickLift = Number(pot.clicks || 0) - Number(base.clicks || 0);
-              const costChange = Number(pot.cost_micros || 0) - Number(base.cost_micros || 0);
-              return `| ${rec.type} | +${imprLift} | +${clickLift} | ${formatMicros(costChange)} | ${rec.campaign || "—"} |`;
-            })
-            .join("\n");
-          return `Recommendations — ${rows.length} active\n\n${header}\n${body}`;
+          const hasImpact = rows.some((r) => r.recommendation?.impact?.base_metrics);
+          if (hasImpact) {
+            const header = "| Type | Est. Impr Lift | Est. Click Lift | Est. Cost Change | Campaign |\n|---|---|---|---|---|";
+            const body = rows
+              .map((r) => {
+                const rec = r.recommendation;
+                const impact = rec.impact || {};
+                const base = impact.base_metrics || {};
+                const pot = impact.potential_metrics || {};
+                const imprLift = Number(pot.impressions || 0) - Number(base.impressions || 0);
+                const clickLift = Number(pot.clicks || 0) - Number(base.clicks || 0);
+                const costChange = Number(pot.cost_micros || 0) - Number(base.cost_micros || 0);
+                const campName = rec.campaign ? rec.campaign.split("/").pop() : "—";
+                return `| ${rec.type} | +${imprLift} | +${clickLift} | ${formatMicros(costChange)} | ${campName} |`;
+              })
+              .join("\n");
+            return `Recommendations — ${rows.length} active\n\n${header}\n${body}`;
+          } else {
+            const header = "| # | Type | Campaign |\n|---|---|---|";
+            const body = rows
+              .map((r, i) => {
+                const rec = r.recommendation;
+                const campName = rec.campaign ? rec.campaign.split("/").pop() : "—";
+                return `| ${i + 1} | ${rec.type} | ${campName} |`;
+              })
+              .join("\n");
+            return `Recommendations — ${rows.length} active\n\n${header}\n${body}`;
+          }
         })
       );
     } catch (e) {
@@ -1091,8 +1236,11 @@ server.tool(
       `);
       if (!current) return text(`Campaign ${campaign_id} not found.`);
 
-      const kwList = keywords.split(",").map((k) => k.trim()).filter(Boolean);
-      if (kwList.length === 0) return text("No keywords provided.");
+      let kwList = keywords.split(",").map((k) => k.trim()).filter(Boolean);
+      const tooLong = kwList.filter((k) => k.length > 80);
+      if (tooLong.length) return text(`Negative keywords exceed 80 chars: ${tooLong.slice(0, 3).join(", ")}`);
+      kwList = [...new Set(kwList.map((k) => k.toLowerCase()))];
+      if (kwList.length === 0) return text("No valid keywords provided after filtering.");
       if (kwList.length > 50) return text("Maximum 50 keywords per call. Please split into batches.");
 
       const matchTypeEnum = {
@@ -1113,8 +1261,25 @@ server.tool(
 
       await customer.mutateResources(operations);
 
+      let verifyNote = "";
+      try {
+        const verifyRows = await customer.query(`
+          SELECT campaign_criterion.keyword.text, campaign_criterion.keyword.match_type
+          FROM campaign_criterion
+          WHERE campaign_criterion.campaign = 'customers/${cid}/campaigns/${campaign_id}'
+            AND campaign_criterion.negative = true
+          ORDER BY campaign_criterion.criterion_id DESC
+          LIMIT ${kwList.length}
+        `);
+        const foundTexts = verifyRows.map((r) => (r.campaign_criterion?.keyword?.text || "").toLowerCase());
+        const verifiedCount = kwList.filter((kw) => foundTexts.includes(kw.toLowerCase())).length;
+        verifyNote = verifiedCount === kwList.length
+          ? `\n\n✅ **Verified**: All ${verifiedCount} keywords confirmed in account.`
+          : `\n\n⚠️ **Verification**: ${verifiedCount}/${kwList.length} keywords confirmed in account.`;
+      } catch (_) { /* best-effort */ }
+
       const kwTable = kwList.map((kw) => `| ${kw} | ${match_type} | Negative |`).join("\n");
-      return text(`**Added ${kwList.length} negative keywords** to campaign "${current.campaign.name}"\n\n| Keyword | Match Type | Type |\n|---|---|---|\n${kwTable}`);
+      return text(`**Added ${kwList.length} negative keywords** to campaign "${current.campaign.name}"\n\n| Keyword | Match Type | Type |\n|---|---|---|\n${kwTable}${verifyNote}`);
     } catch (e) {
       return text(safeError(e));
     }
