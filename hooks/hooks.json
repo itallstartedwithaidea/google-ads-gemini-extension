@@ -1,6 +1,30 @@
 {
   "hooks": {
-    "BeforeTool": [],
-    "AfterTool": []
+    "BeforeTool": [
+      {
+        "matcher": "run_gaql",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${extensionPath}/hooks/validate-gaql.js",
+            "name": "validate-gaql",
+            "description": "Validates GAQL queries to prevent write operations"
+          }
+        ]
+      }
+    ],
+    "AfterTool": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${extensionPath}/hooks/log-tool-call.js",
+            "name": "audit-log",
+            "description": "Logs all Google Ads tool calls for audit trail"
+          }
+        ]
+      }
+    ]
   }
 }
