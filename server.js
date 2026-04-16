@@ -5,6 +5,8 @@ import { GoogleAdsApi, enums, ResourceNames } from "google-ads-api";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import * as sessionStore from "./lib/session-store.js";
+import { runLoginFlow, revokeRefreshToken } from "./lib/oauth-login.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 try {
@@ -96,8 +98,43 @@ function safeError(e) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const SITE_URL = (process.env.GADS_SITE_URL || "").replace(/\/+$/, "");
-let SITE_SESSION = process.env.GADS_SITE_SESSION_ID || "";
-let SITE_CONFIGURED = !!(SITE_URL && SITE_SESSION);
+
+// SITE_SESSION is loaded at boot from the session store (preferred) or
+// from the legacy GADS_SITE_SESSION_ID env var (backward-compatible).
+// It is mutated at runtime by remote_login / remote_switch / remote_logout
+// so that the user can hot-swap identities without restarting the MCP server.
+let SITE_SESSION = "";
+let SITE_ACTIVE_EMAIL = null;
+let SITE_CONFIGURED = false;
+
+async function bootstrapRemoteSession() {
+  try {
+    const active = await sessionStore.getActive();
+    if (active?.sessionId) {
+      SITE_SESSION = active.sessionId;
+      SITE_ACTIVE_EMAIL = active.email;
+      SITE_CONFIGURED = !!SITE_URL;
+      return;
+    }
+  } catch (_) { /* fall through to env */ }
+  if (process.env.GADS_SITE_SESSION_ID) {
+    SITE_SESSION = process.env.GADS_SITE_SESSION_ID;
+    SITE_ACTIVE_EMAIL = null;
+    SITE_CONFIGURED = !!(SITE_URL && SITE_SESSION);
+  }
+}
+await bootstrapRemoteSession();
+
+function setActiveSession({ sessionId, email }) {
+  SITE_SESSION = sessionId || "";
+  SITE_ACTIVE_EMAIL = email || null;
+  SITE_CONFIGURED = !!(SITE_URL && SITE_SESSION);
+  _siteCredsCache = null;
+  _siteCredsCachedAt = 0;
+  _siteAccountsCache = null;
+  _siteAccountsCachedAt = 0;
+  _autoRefreshAttempted = false;
+}
 
 let _siteCredsCache = null;
 let _siteCredsCachedAt = 0;
@@ -116,15 +153,39 @@ function redactSecret(value, prefix = 8) {
   return `${s.slice(0, prefix)}…(len=${s.length})`;
 }
 
+/**
+ * Refresh the Remote session using the ACTIVE IDENTITY's own refresh token
+ * (from the session store), not Method 1's GOOGLE_ADS_REFRESH_TOKEN. This
+ * guarantees Method 1 and Method 2 stay cleanly separated: Method 1 is always
+ * the static API creds, Method 2 is whatever email the user signed in with.
+ */
 async function autoRefreshSession() {
   if (_autoRefreshAttempted) return false;
   _autoRefreshAttempted = true;
 
-  const refreshToken = process.env.GOOGLE_ADS_REFRESH_TOKEN;
-  if (!SITE_URL || !refreshToken) return false;
+  if (!SITE_URL) return false;
+
+  let refreshToken = null;
+  let email = SITE_ACTIVE_EMAIL;
+  try {
+    const active = await sessionStore.getActive();
+    if (active?.refreshToken) {
+      refreshToken = active.refreshToken;
+      email = active.email;
+    }
+  } catch (_) { /* store unavailable */ }
+
+  // Legacy fallback for users still on v2.2's env-var session without a
+  // stored identity. Uses Method 1's refresh token only if no identity
+  // is stored — this is the one exception, kept for backward compatibility.
+  if (!refreshToken && !email && process.env.GOOGLE_ADS_REFRESH_TOKEN) {
+    refreshToken = process.env.GOOGLE_ADS_REFRESH_TOKEN;
+  }
+
+  if (!refreshToken) return false;
 
   try {
-    console.error("[google-ads-agent] Session expired — auto-creating new session...");
+    console.error(`[google-ads-agent] Remote session expired${email ? ` for ${email}` : ""} — refreshing...`);
     const resp = await fetch(`${SITE_URL}/api/auth`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -137,6 +198,9 @@ async function autoRefreshSession() {
       _siteCredsCache = null;
       _siteAccountsCache = null;
       _autoRefreshAttempted = false;
+      if (email) {
+        try { await sessionStore.updateSessionId(email, data.sessionId); } catch (_) {}
+      }
       console.error(`[google-ads-agent] Auto-refresh OK: ${redactSecret(data.sessionId)} (${data.accounts} accounts)`);
       return true;
     }
@@ -489,6 +553,175 @@ function fmt(rows, formatFn) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // TOOLS — using server.tool(name, description, zodSchema, handler)
 // ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Dual-lane sign-in tools (Remote identities) ─────────────────────────────
+
+function localCredsStatus() {
+  const required = [
+    "GOOGLE_ADS_DEVELOPER_TOKEN",
+    "GOOGLE_ADS_CLIENT_ID",
+    "GOOGLE_ADS_CLIENT_SECRET",
+    "GOOGLE_ADS_REFRESH_TOKEN",
+  ];
+  const missing = required.filter((k) => !process.env[k]);
+  return {
+    active: missing.length === 0,
+    missing,
+    loginCustomerId: process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID || null,
+  };
+}
+
+server.tool(
+  "remote_login",
+  "Sign in to the Remote (googleadsagent.ai) backend with ANY Google account that has Google Ads access. Opens your browser for Google's OAuth consent, exchanges tokens via PKCE, mints a googleadsagent.ai session, and saves the identity (refresh token in your OS keychain, metadata in sessions.json). After login the new identity becomes active for all Remote tool calls. You can run this again with a different Google account to add another identity; use remote_switch to hop between them.",
+  async () => {
+    try {
+      if (!SITE_URL) {
+        return text("Remote backend not configured. Set GADS_SITE_URL in your extension .env (e.g., https://googleadsagent.ai).");
+      }
+      const clientId = process.env.GADS_CLI_OAUTH_CLIENT_ID || process.env.GOOGLE_ADS_CLIENT_ID;
+      if (!clientId) {
+        return text("OAuth client ID missing. Set GADS_CLI_OAUTH_CLIENT_ID (preferred) or GOOGLE_ADS_CLIENT_ID in your extension .env.");
+      }
+
+      let promptUrl = null;
+      const result = await runLoginFlow({
+        clientId,
+        siteUrl: SITE_URL,
+        onPrompt: (url) => { promptUrl = url; console.error(`[google-ads-agent] If the browser did not open, visit:\n${url}`); },
+      });
+
+      await sessionStore.save({
+        email: result.email,
+        refreshToken: result.refreshToken,
+        sessionId: result.sessionId,
+        accountsCount: result.accountsCount,
+      });
+      setActiveSession({ sessionId: result.sessionId, email: result.email });
+
+      const lines = [
+        `✅ Signed in as **${result.email}**`,
+        result.accountsCount != null ? `   ${result.accountsCount} Google Ads accounts accessible` : null,
+        `   session: ${redactSecret(result.sessionId)}`,
+        `   backend: ${(await sessionStore.backendInfo()).backend} (secret storage)`,
+        "",
+        "Active identity switched. Run `list_accounts` to see your accounts.",
+        promptUrl ? null : null,
+      ].filter(Boolean);
+      return text(lines.join("\n"));
+    } catch (e) {
+      return text(`Sign-in failed: ${e.message}`);
+    }
+  }
+);
+
+server.tool(
+  "remote_switch",
+  "Switch the active Remote identity to a previously signed-in Google account. No browser, no re-auth — uses the refresh token already stored in your OS keychain. Use remote_status to list stored identities.",
+  { email: z.string().email().describe("Email address of a stored identity (see remote_status)") },
+  async ({ email }) => {
+    try {
+      const id = await sessionStore.getIdentity(email);
+      if (!id) return text(`No stored identity for ${email}. Run remote_login first.`);
+
+      // Mint a fresh session from the stored refresh token so we always
+      // hand a valid sessionId to the remote backend.
+      if (!SITE_URL) return text("Remote backend not configured (GADS_SITE_URL missing).");
+      const resp = await fetch(`${SITE_URL}/api/auth`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create_api_session", refreshToken: id.refreshToken }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!data.sessionId) {
+        return text(`Session mint failed for ${email}: ${data.error || resp.statusText}. You may need to remote_login again.`);
+      }
+      await sessionStore.updateSessionId(email, data.sessionId);
+      await sessionStore.setActive(email);
+      setActiveSession({ sessionId: data.sessionId, email });
+      return text(`✅ Active identity switched to **${email}** (${data.accounts ?? "?"} accounts).`);
+    } catch (e) {
+      return text(`Switch failed: ${e.message}`);
+    }
+  }
+);
+
+server.tool(
+  "remote_status",
+  "Show the current authentication state of BOTH lanes: Method 1 (Local Google Ads API) and Method 2 (Remote googleadsagent.ai). Lists all stored Remote identities and which one is active. Never prints tokens.",
+  async () => {
+    try {
+      const [list, backend, local] = await Promise.all([
+        sessionStore.listIdentities(),
+        sessionStore.backendInfo(),
+        Promise.resolve(localCredsStatus()),
+      ]);
+
+      const lines = [];
+      lines.push("## Method 1 — Local Google Ads API");
+      if (local.active) {
+        lines.push(`  status:  active`);
+        lines.push(`  MCC:     ${local.loginCustomerId || "(not set)"}`);
+      } else {
+        lines.push(`  status:  inactive`);
+        lines.push(`  missing: ${local.missing.join(", ")}`);
+        lines.push(`  fix:     run \`gemini extensions config google-ads-agent\` or set env vars in .env`);
+      }
+      lines.push("");
+      lines.push("## Method 2 — Remote (googleadsagent.ai)");
+      if (!SITE_URL) {
+        lines.push(`  status:  unconfigured (set GADS_SITE_URL)`);
+      } else {
+        lines.push(`  site:    ${SITE_URL}`);
+        lines.push(`  active:  ${list.active || "(none — run /google-ads:login)"}`);
+        lines.push(`  storage: ${backend.backend === "keychain" ? "OS keychain (keytar)" : "file (sessions.secrets.json, 0600)"}`);
+        if (list.identities.length === 0) {
+          lines.push(`  identities: (none stored)`);
+        } else {
+          lines.push(`  identities:`);
+          for (const i of list.identities) {
+            const star = i.email === list.active ? "*" : " ";
+            lines.push(`   ${star} ${i.email}  (accounts: ${i.accountsCount ?? "?"}, added: ${i.addedAt?.slice(0, 10) || "?"})`);
+          }
+        }
+      }
+      return text(lines.join("\n"));
+    } catch (e) {
+      return text(`Status error: ${e.message}`);
+    }
+  }
+);
+
+server.tool(
+  "remote_logout",
+  "Revoke and remove a stored Remote identity. If no email is given, removes the currently active one. Calls Google's token revocation endpoint so the refresh token can't outlive the sign-out, then clears the OS keychain entry and sessions.json metadata.",
+  { email: z.string().email().optional().describe("Email to log out. Defaults to the currently active identity.") },
+  async ({ email }) => {
+    try {
+      const list = await sessionStore.listIdentities();
+      const target = email || list.active;
+      if (!target) return text("No active Remote identity to log out.");
+      const id = await sessionStore.getIdentity(target);
+      if (id?.refreshToken) {
+        const revoked = await revokeRefreshToken(id.refreshToken);
+        if (!revoked) console.error(`[google-ads-agent] Token revoke returned non-OK for ${target} (ignored).`);
+      }
+      const newActive = await sessionStore.remove(target);
+      if (target === SITE_ACTIVE_EMAIL) {
+        if (newActive) {
+          const next = await sessionStore.getActive();
+          setActiveSession({ sessionId: next?.sessionId, email: next?.email });
+        } else {
+          setActiveSession({ sessionId: "", email: null });
+        }
+      }
+      const tail = newActive ? `Active is now **${newActive}**.` : "No more stored identities. Run remote_login to sign in.";
+      return text(`✅ Removed **${target}**. ${tail}`);
+    } catch (e) {
+      return text(`Logout failed: ${e.message}`);
+    }
+  }
+);
 
 // ─── list_accounts ───────────────────────────────────────────────────────────
 
