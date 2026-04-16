@@ -2,6 +2,8 @@
 
 **Idiomas:** [English](README.md) · [Français](README.fr.md) · [Español](README.es.md) · [中文](README.zh.md) · [Nederlands](README.nl.md) · [Русский](README.ru.md) · [한국어](README.ko.md)
 
+> **Nuevo en v2.3: inicio de sesión con un solo comando.** Ahora `/google-ads:login` abre tu navegador y te permite iniciar sesión con cualquier cuenta de Google que tenga acceso a Google Ads (OAuth con PKCE) — sin copiar y pegar session IDs. El refresh token se guarda en el llavero del sistema operativo. Soporta múltiples identidades: `/google-ads:status`, `/google-ads:switch <email>`, `/google-ads:logout`. Consulta el [README en inglés](README.md#step-5-sign-in-30-seconds-any-google-account) para más detalles.
+
 Una extensión de [Gemini CLI](https://github.com/google-gemini/gemini-cli) que te da **acceso en vivo a la API de Google Ads** desde la terminal. Pregunta por tus campañas, detecta gasto desperdiciado, audita cuentas y obtén recomendaciones de optimización, todo mediante conversación natural.
 
 <img width="1196" height="1058" alt="image" src="https://github.com/user-attachments/assets/ab7b2dbf-6cdc-41ef-94b0-0288f87f3b4a" />

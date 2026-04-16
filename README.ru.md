@@ -2,6 +2,8 @@
 
 **Языки:** [English](README.md) · [Français](README.fr.md) · [Español](README.es.md) · [中文](README.zh.md) · [Nederlands](README.nl.md) · [Русский](README.ru.md) · [한국어](README.ko.md)
 
+> **Новое в v2.3: вход одной командой.** Теперь `/google-ads:login` открывает браузер и позволяет войти в любой аккаунт Google с доступом к Google Ads (OAuth с PKCE) — без копирования session ID. Refresh token хранится в связке ключей ОС. Поддержка нескольких аккаунтов: `/google-ads:status`, `/google-ads:switch <email>`, `/google-ads:logout`. Подробнее в [English README](README.md#step-5-sign-in-30-seconds-any-google-account).
+
 Расширение для [Gemini CLI](https://github.com/google-gemini/gemini-cli), которое даёт **прямой доступ к Google Ads API** из терминала. Спрашивайте о кампаниях, ищите лишние расходы, проводите аудит аккаунтов и получайте рекомендации по оптимизации — всё в естественном диалоге.
 
 <img width="1196" height="1058" alt="image" src="https://github.com/user-attachments/assets/ab7b2dbf-6cdc-41ef-94b0-0288f87f3b4a" />

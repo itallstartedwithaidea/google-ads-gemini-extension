@@ -45,13 +45,48 @@ The free tier gives you 60 requests/minute and 1,000/day — more than enough.
 gemini extensions install https://github.com/itallstartedwithaidea/google-ads-gemini-extension
 ```
 
-You'll be prompted to confirm the install and enter your Google Ads credentials (see [Getting Credentials](#getting-credentials) below). Sensitive values are stored in your system keychain.
+### Step 5: Sign in (30 seconds, any Google account)
 
-### Step 5: Start using it
+As of v2.3, signing in is one command — the extension opens your browser, you pick any Google account with Google Ads access, and you're done. No copy-pasting session IDs, no OAuth Playground, no manual `.env` editing.
 
 ```bash
 gemini
 ```
+
+Then in the CLI:
+
+```
+> /google-ads:login
+```
+
+What happens:
+
+1. Your default browser opens to Google's consent screen
+2. Pick any Google account that has Google Ads access
+3. Approve the one scope (`adwords`)
+4. The tab auto-closes — you're back in the terminal
+5. The extension prints `✅ Signed in as you@example.com — 123 accounts accessible`
+
+Your refresh token is stored in your **OS keychain** (macOS Keychain / Windows Credential Manager / Linux libsecret) via [keytar](https://github.com/atom/node-keytar). If keychain isn't available, the extension falls back to a `0600`-permission file that's gitignored.
+
+**Two independent lanes, both active at once:**
+
+| Lane | What it is | How to configure |
+|------|------------|------------------|
+| **Method 1 — Local API** | Your static Google Ads API credentials in `.env`. One fixed identity. | `gemini extensions config google-ads-agent` (see [Getting Credentials](#getting-credentials)) |
+| **Method 2 — Remote (browser sign-in)** | Whatever Google email you just signed in with. Switchable at any time. | `/google-ads:login` |
+
+You can have both, either, or neither. `list_accounts` automatically merges results from both lanes with deduplication.
+
+**Multi-identity:** run `/google-ads:login` again with a different Google account to add another identity. Switch between them with zero re-auth:
+
+```
+> /google-ads:status                  # see all stored identities
+> /google-ads:switch other@example.com  # hop to another, no browser
+> /google-ads:logout                  # revoke at Google and clear locally
+```
+
+### Step 6: Start using it
 
 That's it. The extension auto-loads every time. Just start asking questions:
 
@@ -113,7 +148,11 @@ Once installed, type `gemini` to launch the interactive CLI. Here's what you can
 ### Slash commands
 
 ```
-/google-ads:analyze "Brand Search campaign last 30 days"
+/google-ads:login                             # sign in with any Google account
+/google-ads:status                            # show Method 1 + Method 2 auth state
+/google-ads:switch other@example.com          # hop to another stored identity
+/google-ads:logout                            # revoke + clear the active identity
+/google-ads:analyze "Brand Search last 30 days"
 /google-ads:audit "full account, focus on wasted spend"
 /google-ads:optimize "improve ROAS for ecommerce campaigns"
 ```
@@ -133,18 +172,31 @@ This extension implements every feature type in the Gemini CLI extension spec:
 
 | Feature | What's included |
 |---------|----------------|
-| **MCP Server** | 22 tools — 15 read + 7 write with live Google Ads API access |
-| **Commands** | `/google-ads:analyze`, `/google-ads:audit`, `/google-ads:optimize` |
+| **MCP Server** | 26 tools — 15 read + 7 write + 4 auth, with live Google Ads API access |
+| **Commands** | `/google-ads:login`, `/google-ads:switch`, `/google-ads:status`, `/google-ads:logout`, `/google-ads:analyze`, `/google-ads:audit`, `/google-ads:optimize` |
+| **Auth** | Dual-lane: static `.env` API credentials **and** browser OAuth (PKCE) for any Google account, switchable at runtime, stored in the OS keychain |
 | **Skills** | `google-ads-agent` (PPC expertise + GAQL templates) and `security-auditor` (vulnerability scanning) |
 | **Context** | `GEMINI.md` — persistent API reference loaded every session |
 | **Hooks** | GAQL write-blocking + audit logging for every tool call |
 | **Policies** | User confirmation required before any API call executes |
 | **Themes** | `google-ads` (dark) and `google-ads-light` (light) |
-| **Settings** | 5 credential fields with system keychain storage for sensitive values |
+| **Settings** | 7 settings — Method 1 API credentials (keychain) + Remote site URL/session |
 
 ---
 
-## MCP Server — 22 Tools
+## MCP Server — 26 Tools
+
+### Auth Tools (4, new in v2.3)
+
+These manage the Remote (browser-sign-in) lane. They never touch Method 1.
+
+| Tool | Description |
+|------|-------------|
+| `remote_login` | Opens the browser for Google OAuth (PKCE), mints a googleadsagent.ai session, stores the identity (refresh token in OS keychain), sets it active. Works with any Google account that has Google Ads access. |
+| `remote_switch` | Switch the active identity to a previously signed-in email. No browser, no re-auth — uses the refresh token already in your keychain. |
+| `remote_status` | Shows both lanes side-by-side. Method 1 credential check (lists any missing env vars); Method 2 stored identities with active pointer, account counts, storage backend (keychain vs file). Never prints tokens. |
+| `remote_logout` | Revokes the refresh token at Google's revocation endpoint, deletes the keychain entry, removes the identity from `sessions.json`. Defaults to the active identity if no email is given. |
+
 
 ### Read Tools (15)
 
@@ -184,15 +236,24 @@ These tools make changes to your Google Ads account. **Every write tool requires
 
 ### Safety
 
-- **Read-only by default**: `run_gaql` only allows SELECT queries — CREATE, UPDATE, DELETE, MUTATE, and REMOVE are all blocked
-- **Policy engine**: Every API tool requires your confirmation before it runs
-- **Rate limiting**: 10 calls per minute per tool to prevent runaway usage
-- **Error sanitization**: Internal API details are never exposed — you get clean, actionable error messages
-- **Audit logging**: Every tool call is logged to `~/.gemini/logs/google-ads-agent.log`
+- **OAuth 2.0 + PKCE** (RFC 7636 + RFC 8252): no client secret is shipped with the extension; the browser loopback proves possession. This is the exact pattern used by `gh`, `gcloud`, and `aws sso`.
+- **Secrets never in plaintext files by default**: refresh tokens live in the OS keychain; only when keychain is unavailable does the extension fall back to a `0600`-permission file that's gitignored.
+- **CSRF-protected**: every sign-in generates a cryptographically-random `state` parameter that's verified on the callback.
+- **Revocation on logout**: `/google-ads:logout` calls `oauth2.googleapis.com/revoke` so refresh tokens can't outlive a sign-out.
+- **Read-only by default**: `run_gaql` only allows SELECT queries — CREATE, UPDATE, DELETE, MUTATE, and REMOVE are all blocked.
+- **Policy engine**: every API tool requires your confirmation before it runs.
+- **Rate limiting**: 10 calls per minute per tool to prevent runaway usage.
+- **Error sanitization**: internal API details are never exposed — you get clean, actionable error messages.
+- **Audit logging**: every tool call is logged to `~/.gemini/logs/google-ads-agent.log`.
+- **Lane isolation**: Method 1 and Method 2 have separate refresh tokens. Signing in or out of Method 2 never affects Method 1's static API credentials.
 
 ---
 
 ## Getting Credentials
+
+> **Do you actually need this?** If you just want to read and edit accounts that your Google login can see, you don't — run `/google-ads:login` and you're done. This section covers **Method 1** (the static API lane) which you only need if you want a fixed machine identity independent of whatever browser account you're signed in with. Many users run **both**.
+
+> **Upgrading from v2.2?** Your existing `GADS_SITE_SESSION_ID` in `.env` is still honored as a fallback when no identity is stored, so nothing breaks. Run `/google-ads:login` once to migrate to the new identity store — afterwards you can delete `GADS_SITE_SESSION_ID` from `.env` entirely.
 
 You need **5 values** from **3 places**. This is a one-time setup.
 
