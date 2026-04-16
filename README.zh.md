@@ -2,7 +2,7 @@
 
 **语言：** [English](README.md) · [Français](README.fr.md) · [Español](README.es.md) · [中文](README.zh.md) · [Nederlands](README.nl.md) · [Русский](README.ru.md) · [한국어](README.ko.md)
 
-> **v2.3 新功能：一键登录。** 现在可以用 `/google-ads:login` 在浏览器中登录任意 Google 账号（PKCE OAuth），无需复制粘贴会话 ID。刷新令牌保存在操作系统钥匙串中。支持多账号切换：`/google-ads:status` 查看，`/google-ads:switch <email>` 切换，`/google-ads:logout` 退出。详见 [English README](README.md#step-5-sign-in-30-seconds-any-google-account)。
+> **v2.4 新功能：真正的零配置登录。** `/google-ads:login` 现在通过 [googleadsagent.ai](https://googleadsagent.ai) 的已验证 OAuth 客户端完成整个登录流程，**完全不需要 Google Cloud Console、客户端 ID 或刷新令牌**。只保存一个不透明的会话 ID 到操作系统钥匙串。仍然支持多账号：`/google-ads:status`、`/google-ads:switch <email>`、`/google-ads:logout`。v2.3 的身份自动兼容。详见 [English README](README.md#step-5-sign-in-30-seconds-any-google-account)。
 
 一款 [Gemini CLI](https://github.com/google-gemini/gemini-cli) 扩展，让你在终端中**实时访问 Google Ads API**。用自然语言询问广告系列、发现浪费的支出、审计账号并获取优化建议。
 

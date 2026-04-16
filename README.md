@@ -1,5 +1,7 @@
 # Google Ads Agent — Gemini CLI Extension
 
+> **New in v2.4 — zero-setup sign-in.** `/google-ads:login` now delegates the entire Google OAuth flow to [googleadsagent.ai](https://googleadsagent.ai)'s already-verified OAuth client. **No Google Cloud Console, no client IDs, no refresh tokens, no copy-paste.** Open the browser, pick any Google account with Google Ads access, approve, done. Only an opaque session id is stored locally in your OS keychain. v2.3 identities continue to work automatically. See [Step 5](#step-5-sign-in-30-seconds-any-google-account) below.
+
 A [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension that gives you **live Google Ads API access** from your terminal. Ask questions about your campaigns, find wasted spend, audit accounts, get optimization recommendations — all through natural conversation.
 
 Built from production learnings running an AI Google Ads agent at [googleadsagent.ai](https://googleadsagent.ai) — 28 custom API actions, 6 sub-agents, managing real Google Ads accounts via the Google Ads API v22.

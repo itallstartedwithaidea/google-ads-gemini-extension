@@ -2,7 +2,7 @@
 
 **언어:** [English](README.md) · [Français](README.fr.md) · [Español](README.es.md) · [中文](README.zh.md) · [Nederlands](README.nl.md) · [Русский](README.ru.md) · [한국어](README.ko.md)
 
-> **v2.3 새 기능: 한 번의 명령으로 로그인.** 이제 `/google-ads:login`으로 브라우저를 열어 Google Ads 접근 권한이 있는 임의의 Google 계정으로 로그인할 수 있습니다(PKCE OAuth). 세션 ID를 복사·붙여넣을 필요가 없습니다. 리프레시 토큰은 OS 키체인에 저장됩니다. 다중 계정 전환 지원: `/google-ads:status`, `/google-ads:switch <email>`, `/google-ads:logout`. 자세한 내용은 [English README](README.md#step-5-sign-in-30-seconds-any-google-account)를 참고하세요.
+> **v2.4 새 기능: 설정이 전혀 필요 없는 로그인.** `/google-ads:login`은 이제 Google OAuth 전체 과정을 [googleadsagent.ai](https://googleadsagent.ai)의 이미 검증된 OAuth 클라이언트에 위임합니다. **Google Cloud Console, 클라이언트 ID, 리프레시 토큰이 모두 필요 없습니다.** 로컬에는 불투명한 세션 ID만 OS 키체인에 저장됩니다. 다중 계정은 계속 지원됩니다: `/google-ads:status`, `/google-ads:switch <email>`, `/google-ads:logout`. v2.3의 기존 계정은 자동으로 계속 동작합니다. 자세한 내용은 [English README](README.md#step-5-sign-in-30-seconds-any-google-account)를 참고하세요.
 
 터미널에서 **Google Ads API에 실시간으로 연결**해 주는 [Gemini CLI](https://github.com/google-gemini/gemini-cli) 확장입니다. 캠페인을 물어보고, 낭비 지출을 찾고, 계정을 감사하고, 최적화 제안을 받을 수 있습니다 — 모두 자연스러운 대화로 진행됩니다.
 

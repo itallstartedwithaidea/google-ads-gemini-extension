@@ -1,13 +1,8 @@
 /**
- * Mocked-keytar roundtrip test for lib/session-store.js.
+ * Tests for lib/session-store.js.
  *
- * Forces the file-fallback backend so CI can run without a real keychain
- * on any OS. The store auto-detects keytar at runtime, so we shim the
- * import by pointing NODE_OPTIONS / working directory to a tree where
- * keytar is unresolvable. For simplicity we instead test the file backend
- * directly by stubbing loadKeytar via a subprocess env var.
- *
- * Run with: npm test
+ * Exercises both the v2.4 slim payload (sessionId only) and the v2.3
+ * backward-compat payload (sessionId + refreshToken). Run: `npm test`.
  */
 
 import { test } from "node:test";
@@ -27,19 +22,14 @@ function cleanup() {
   }
 }
 
-test("session-store: save -> getActive -> switch -> remove roundtrip", async (t) => {
+test("session-store: v2.4 slim save -> getActive -> switch -> remove roundtrip", async (t) => {
   cleanup();
   t.after(cleanup);
 
-  // Force file backend by pre-loading a module that makes keytar fail.
-  // Simpler: spawn a child process with a PATH that has no keychain lib.
-  // Even simpler: just use the real module — it will use whichever
-  // backend is available, and we only assert on the public contract.
   const store = await import("../lib/session-store.js");
 
   const saveA = await store.save({
     email: "alice@example.com",
-    refreshToken: "rt_alice",
     sessionId: "sid_alice",
     accountsCount: 3,
   });
@@ -49,20 +39,15 @@ test("session-store: save -> getActive -> switch -> remove roundtrip", async (t)
   let list = await store.listIdentities();
   assert.equal(list.active, "alice@example.com");
   assert.equal(list.identities.length, 1);
-  assert.equal(list.identities[0].email, "alice@example.com");
   assert.equal(list.identities[0].accountsCount, 3);
 
   const active = await store.getActive();
   assert.equal(active?.email, "alice@example.com");
-  assert.equal(active?.refreshToken, "rt_alice");
   assert.equal(active?.sessionId, "sid_alice");
+  // v2.4 slim entries have no refresh token.
+  assert.ok(!active?.refreshToken);
 
-  await store.save({
-    email: "bob@example.com",
-    refreshToken: "rt_bob",
-    sessionId: "sid_bob",
-    accountsCount: 7,
-  });
+  await store.save({ email: "bob@example.com", sessionId: "sid_bob", accountsCount: 7 });
   list = await store.listIdentities();
   assert.equal(list.active, "bob@example.com");
   assert.equal(list.identities.length, 2);
@@ -74,7 +59,6 @@ test("session-store: save -> getActive -> switch -> remove roundtrip", async (t)
   await store.updateSessionId("alice@example.com", "sid_alice_v2");
   const rotated = await store.getActive();
   assert.equal(rotated?.sessionId, "sid_alice_v2");
-  assert.equal(rotated?.refreshToken, "rt_alice");
 
   await store.remove("alice@example.com");
   list = await store.listIdentities();
@@ -87,6 +71,53 @@ test("session-store: save -> getActive -> switch -> remove roundtrip", async (t)
   assert.equal(list.identities.length, 0);
 });
 
+test("session-store: v2.3 payload keeps refreshToken readable (backward-compat)", async (t) => {
+  cleanup();
+  t.after(cleanup);
+  const store = await import("../lib/session-store.js");
+
+  await store.save({
+    email: "legacy@example.com",
+    sessionId: "sid_legacy",
+    refreshToken: "rt_legacy",
+    accountsCount: 5,
+  });
+
+  const active = await store.getActive();
+  assert.equal(active?.email, "legacy@example.com");
+  assert.equal(active?.sessionId, "sid_legacy");
+  assert.equal(active?.refreshToken, "rt_legacy");
+
+  await store.remove("legacy@example.com");
+});
+
+test("session-store: re-save with no refreshToken silently drops a v2.3 token", async (t) => {
+  cleanup();
+  t.after(cleanup);
+  const store = await import("../lib/session-store.js");
+
+  await store.save({
+    email: "migrate@example.com",
+    sessionId: "sid_old",
+    refreshToken: "rt_old",
+    accountsCount: 1,
+  });
+  let active = await store.getActive();
+  assert.equal(active?.refreshToken, "rt_old");
+
+  // Simulate a v2.4 re-login for the same email.
+  await store.save({
+    email: "migrate@example.com",
+    sessionId: "sid_new",
+    accountsCount: 2,
+  });
+  active = await store.getActive();
+  assert.equal(active?.sessionId, "sid_new");
+  assert.ok(!active?.refreshToken, "refreshToken should be dropped on v2.4 re-save");
+
+  await store.remove("migrate@example.com");
+});
+
 test("session-store: getIdentity returns null for unknown email", async () => {
   cleanup();
   const store = await import("../lib/session-store.js");
@@ -94,8 +125,8 @@ test("session-store: getIdentity returns null for unknown email", async () => {
   assert.equal(id, null);
 });
 
-test("session-store: save requires email and refreshToken", async () => {
+test("session-store: save requires email and sessionId", async () => {
   const store = await import("../lib/session-store.js");
   await assert.rejects(() => store.save({}), /email is required/);
-  await assert.rejects(() => store.save({ email: "x@y.z" }), /refreshToken is required/);
+  await assert.rejects(() => store.save({ email: "x@y.z" }), /sessionId is required/);
 });
