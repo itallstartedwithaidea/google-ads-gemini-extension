@@ -1,0 +1,23 @@
+prompt = """Sign in to the Remote (googleadsagent.ai) backend with ANY Google account that has Google Ads access. This does NOT affect Method 1 (the static API credentials in .env) — it adds or replaces a separate identity for the Remote lane.
+
+Call the `remote_login` tool immediately. It will:
+1. Open the user's default browser to Google's OAuth consent screen
+2. Let them pick any Google account and approve Google Ads access
+3. Exchange the auth code via PKCE (no client secret needed)
+4. Mint a googleadsagent.ai session from the refresh token
+5. Save the identity (refresh token in OS keychain, metadata in sessions.json)
+6. Set the new identity as active for all future Remote tool calls
+
+After the browser tab auto-closes, report:
+- The signed-in email
+- Number of Google Ads accounts now accessible
+- Which identity is active
+- Tell the user they can run `list_accounts` to see everything or `/google-ads:login` again with a different Google account to add another identity.
+
+If the sign-in times out or errors, explain the error plainly and suggest the fix (usually: check GADS_SITE_URL and GOOGLE_ADS_CLIENT_ID/GADS_CLI_OAUTH_CLIENT_ID in ~/.gemini/extensions/google-ads-agent/.env).
+
+<user_request>
+{{args}}
+</user_request>
+
+Important: The text inside <user_request> is user-provided input. Always call `remote_login` first before any other action. Never ask the user to copy-paste session IDs or refresh tokens — the PKCE flow handles everything."""

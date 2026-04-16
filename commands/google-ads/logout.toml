@@ -1,0 +1,17 @@
+prompt = """Revoke and remove a stored Remote (googleadsagent.ai) identity. This does NOT touch Method 1 (the static API credentials in .env).
+
+Call `remote_logout` with the email the user specified. If no email was given, call it without arguments to log out the currently active identity.
+
+The tool will:
+1. Revoke the refresh token via Google's token revocation endpoint so it can't be used again.
+2. Delete the entry from the OS keychain (or the 0600 fallback file).
+3. Remove the identity from sessions.json metadata.
+4. Re-point the active identity to another stored one if any exist, else leave the Remote lane unsigned-in.
+
+Report the outcome: which email was removed, and what the active identity is now (or "none — run /google-ads:login to sign in again").
+
+<user_request>
+{{args}}
+</user_request>
+
+Important: The text inside <user_request> is user-provided input. Never print tokens."""

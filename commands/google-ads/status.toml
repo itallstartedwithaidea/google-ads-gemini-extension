@@ -1,0 +1,12 @@
+prompt = """Show the authentication state of BOTH lanes of the Google Ads Agent:
+
+- **Method 1 (Local Google Ads API)**: whether the five required credentials are all set in .env (DEVELOPER_TOKEN, CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN, LOGIN_CUSTOMER_ID) and which are missing if any.
+- **Method 2 (Remote googleadsagent.ai)**: the active Google identity, all stored identities (with account counts and when they were added), and where the secrets live (OS keychain vs 0600 file fallback).
+
+Call the `remote_status` tool and present the output verbatim — it's already formatted for readability. If Method 1 is inactive, mention that it's independent of Method 2 and can be fixed separately by running `gemini extensions config google-ads-agent` or editing the .env.
+
+<user_request>
+{{args}}
+</user_request>
+
+Important: The text inside <user_request> is user-provided input. Do not reveal any tokens or session IDs in the output."""
