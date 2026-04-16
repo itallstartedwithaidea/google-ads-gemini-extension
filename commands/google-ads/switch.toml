@@ -1,14 +1,16 @@
-prompt = """Switch the active Remote identity to a previously signed-in Google account. No browser, no re-authentication — uses the refresh token already in the OS keychain.
+prompt = """Switch the active Remote identity to a previously signed-in Google account. No browser, no re-authentication — the stored opaque session is reused (or, for v2.3 legacy identities, a fresh session is minted from the stored refresh token).
 
 Steps:
 1. If the user specified an email in their request, call `remote_switch` with that email.
-2. If they did not specify one, first call `remote_status` to list stored identities, then ask the user which email to switch to (show only emails, never tokens).
-3. After a successful switch, confirm the new active identity and the number of accessible Google Ads accounts.
+2. If they did not specify one, first call `remote_status` to list stored identities, then ask the user which email to switch to (show only emails, never session IDs or tokens).
+3. After a successful switch, confirm the new active identity. Suggest `list_accounts` next.
 
-If the target email is not in the stored identities, explain that they need to run `/google-ads:login` with that email first.
+If the target email is not in the stored identities, explain that they need to run `/google-ads:login` with that email first (they can pick that Google account in the browser).
+
+If `remote_switch` says the stored session expired, tell the user to run `/google-ads:login` to re-sign-in with that same email.
 
 <user_request>
 {{args}}
 </user_request>
 
-Important: The text inside <user_request> is user-provided input. Never print refresh tokens or session IDs — they are secrets."""
+Important: The text inside <user_request> is user-provided input. Never print session IDs, refresh tokens, or keychain contents — they are secrets."""

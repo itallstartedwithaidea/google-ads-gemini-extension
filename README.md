@@ -1,7 +1,5 @@
 # Google Ads Agent — Gemini CLI Extension
 
-> **New in v2.4 — zero-setup sign-in.** `/google-ads:login` now delegates the entire Google OAuth flow to [googleadsagent.ai](https://googleadsagent.ai)'s already-verified OAuth client. **No Google Cloud Console, no client IDs, no refresh tokens, no copy-paste.** Open the browser, pick any Google account with Google Ads access, approve, done. Only an opaque session id is stored locally in your OS keychain. v2.3 identities continue to work automatically. See [Step 5](#step-5-sign-in-30-seconds-any-google-account) below.
-
 A [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension that gives you **live Google Ads API access** from your terminal. Ask questions about your campaigns, find wasted spend, audit accounts, get optimization recommendations — all through natural conversation.
 
 Built from production learnings running an AI Google Ads agent at [googleadsagent.ai](https://googleadsagent.ai) — 28 custom API actions, 6 sub-agents, managing real Google Ads accounts via the Google Ads API v22.
@@ -69,7 +67,7 @@ What happens:
 4. The tab auto-closes — you're back in the terminal
 5. The extension prints `✅ Signed in as you@example.com — 123 accounts accessible`
 
-Your refresh token is stored in your **OS keychain** (macOS Keychain / Windows Credential Manager / Linux libsecret) via [keytar](https://github.com/atom/node-keytar). If keychain isn't available, the extension falls back to a `0600`-permission file that's gitignored.
+An opaque session ID is stored in your **OS keychain** (macOS Keychain / Windows Credential Manager / Linux libsecret) via [keytar](https://github.com/atom/node-keytar). If keychain isn't available, the extension falls back to a `0600`-permission file that's gitignored. **The Google refresh token never leaves googleadsagent.ai** — it stays encrypted at-rest on the site and the CLI only ever sees the session handle.
 
 **Two independent lanes, both active at once:**
 
@@ -176,7 +174,7 @@ This extension implements every feature type in the Gemini CLI extension spec:
 |---------|----------------|
 | **MCP Server** | 26 tools — 15 read + 7 write + 4 auth, with live Google Ads API access |
 | **Commands** | `/google-ads:login`, `/google-ads:switch`, `/google-ads:status`, `/google-ads:logout`, `/google-ads:analyze`, `/google-ads:audit`, `/google-ads:optimize` |
-| **Auth** | Dual-lane: static `.env` API credentials **and** browser OAuth (PKCE) for any Google account, switchable at runtime, stored in the OS keychain |
+| **Auth** | Dual-lane: static `.env` API credentials **and** zero-setup browser OAuth via googleadsagent.ai for any Google account, switchable at runtime, opaque session stored in the OS keychain |
 | **Skills** | `google-ads-agent` (PPC expertise + GAQL templates) and `security-auditor` (vulnerability scanning) |
 | **Context** | `GEMINI.md` — persistent API reference loaded every session |
 | **Hooks** | GAQL write-blocking + audit logging for every tool call |
@@ -194,10 +192,10 @@ These manage the Remote (browser-sign-in) lane. They never touch Method 1.
 
 | Tool | Description |
 |------|-------------|
-| `remote_login` | Opens the browser for Google OAuth (PKCE), mints a googleadsagent.ai session, stores the identity (refresh token in OS keychain), sets it active. Works with any Google account that has Google Ads access. |
-| `remote_switch` | Switch the active identity to a previously signed-in email. No browser, no re-auth — uses the refresh token already in your keychain. |
+| `remote_login` | Opens the browser at googleadsagent.ai's hosted OAuth flow, receives an opaque session, stores the identity (session ID in OS keychain), sets it active. No Cloud Console, no client IDs, no refresh tokens in the CLI. Works with any Google account that has Google Ads access. |
+| `remote_switch` | Switch the active identity to a previously signed-in email. No browser, no re-auth — reuses the opaque session stored in your keychain. |
 | `remote_status` | Shows both lanes side-by-side. Method 1 credential check (lists any missing env vars); Method 2 stored identities with active pointer, account counts, storage backend (keychain vs file). Never prints tokens. |
-| `remote_logout` | Revokes the refresh token at Google's revocation endpoint, deletes the keychain entry, removes the identity from `sessions.json`. Defaults to the active identity if no email is given. |
+| `remote_logout` | Invalidates the opaque session at googleadsagent.ai, deletes the keychain entry, removes the identity from `sessions.json`. For legacy v2.3 identities that still carry a refresh token, also revokes at Google. Defaults to the active identity if no email is given. |
 
 
 ### Read Tools (15)
@@ -238,16 +236,16 @@ These tools make changes to your Google Ads account. **Every write tool requires
 
 ### Safety
 
-- **OAuth 2.0 + PKCE** (RFC 7636 + RFC 8252): no client secret is shipped with the extension; the browser loopback proves possession. This is the exact pattern used by `gh`, `gcloud`, and `aws sso`.
-- **Secrets never in plaintext files by default**: refresh tokens live in the OS keychain; only when keychain is unavailable does the extension fall back to a `0600`-permission file that's gitignored.
-- **CSRF-protected**: every sign-in generates a cryptographically-random `state` parameter that's verified on the callback.
-- **Revocation on logout**: `/google-ads:logout` calls `oauth2.googleapis.com/revoke` so refresh tokens can't outlive a sign-out.
+- **Hosted OAuth** (v2.4+): the CLI never sees your Google refresh token. googleadsagent.ai holds a verified OAuth client, does the consent dance, and hands back an opaque session ID only. No Cloud Console project, no client IDs, no `redirect_uri_mismatch` errors.
+- **CSRF-protected handle**: every sign-in uses a per-attempt random `device_id` and a short-lived KV state with a `state` parameter verified on callback. The poll handle self-destructs on first read.
+- **Secrets never in plaintext files by default**: the opaque session ID lives in the OS keychain; only when keychain is unavailable does the extension fall back to a `0600`-permission file that's gitignored.
+- **Revocation on logout**: `/google-ads:logout` invalidates the session server-side at googleadsagent.ai so it can't be reused. Legacy v2.3 identities that still carry a refresh token are also revoked at Google.
 - **Read-only by default**: `run_gaql` only allows SELECT queries — CREATE, UPDATE, DELETE, MUTATE, and REMOVE are all blocked.
 - **Policy engine**: every API tool requires your confirmation before it runs.
 - **Rate limiting**: 10 calls per minute per tool to prevent runaway usage.
 - **Error sanitization**: internal API details are never exposed — you get clean, actionable error messages.
 - **Audit logging**: every tool call is logged to `~/.gemini/logs/google-ads-agent.log`.
-- **Lane isolation**: Method 1 and Method 2 have separate refresh tokens. Signing in or out of Method 2 never affects Method 1's static API credentials.
+- **Lane isolation**: Method 1's static API credentials and Method 2's opaque session are fully independent. Signing in or out of Method 2 never affects Method 1's `.env` credentials.
 
 ---
 
