@@ -1,6 +1,20 @@
-node_modules/
+# Secrets and local state — never commit
 .env
 .env.*
 !.env.example
-*.log
+
+# Multi-identity session store (contains OAuth refresh tokens in fallback mode)
+sessions.json
+sessions.secrets.json
+
+# Node
+node_modules/
+
+# Editor / OS
 .DS_Store
+.vscode/
+.idea/
+*.log
+
+# Audit log (written by hooks/log-tool-call.js, not this directory but harmless)
+google-ads-agent.log
