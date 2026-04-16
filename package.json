@@ -1,15 +1,19 @@
 {
   "name": "google-ads-gemini-extension",
-  "version": "2.2.0",
-  "description": "Gemini CLI extension for Google Ads management — MCP server with live API tools, skills, commands, hooks, and theme",
+  "version": "2.3.0",
+  "description": "Gemini CLI extension for Google Ads management — dual-lane sign-in (static API + browser OAuth, multi-identity, OS keychain), MCP server with live API tools, skills, commands, hooks, and theme",
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test test/**/*.test.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
     "google-ads-api": "^23.0.0",
     "zod": "^3.23.0"
+  },
+  "optionalDependencies": {
+    "keytar": "^7.9.0"
   },
   "engines": {
     "node": ">=18.0.0"
