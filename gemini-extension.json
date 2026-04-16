@@ -1,7 +1,7 @@
 {
   "name": "google-ads-agent",
-  "version": "2.3.0",
-  "description": "Google Ads management for Gemini CLI — dual-lane sign-in (static API + browser OAuth), multi-identity with OS keychain, dual-backend MCP server with local API + remote googleadsagent.ai access. Live API tools, agent skills, commands, hooks, and custom theme.",
+  "version": "2.4.0",
+  "description": "Google Ads management for Gemini CLI — dual-lane sign-in (static API + one-click proxy OAuth via googleadsagent.ai), multi-identity with OS keychain, dual-backend MCP server with local API + remote account access. Live API tools, agent skills, commands, hooks, and custom theme.",
   "contextFileName": "GEMINI.md",
   "settings": [
     {

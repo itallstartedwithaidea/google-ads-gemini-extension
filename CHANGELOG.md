@@ -4,6 +4,38 @@ All notable changes to the `google-ads-gemini-extension` (installed as `google-a
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] — 2026-04-16
+
+### Added
+- **Zero-setup `/google-ads:login`.** The CLI now delegates the entire Google OAuth flow to [googleadsagent.ai](https://googleadsagent.ai), which already has an approved, verified OAuth client. No Google Cloud Console setup, no client IDs, no client secrets, no refresh tokens on the CLI — users just open the browser, pick any Google account, approve, and come back.
+- **Site-side proxy endpoints** (`googleadsagent.ai`): `mobile-login.js` and `mobile-callback.js` now accept `?client=cli`, store it in short-lived KV state, and render a "you can close this tab" page on completion instead of a mobile deep-link.
+- **`lib/oauth-login.js` → `deleteRemoteSession()`** — best-effort server-side session deletion on `/google-ads:logout` so an opaque session id can't outlive the sign-out.
+- **`.env.example`** — template with Method 1 and Method 2 clearly separated; no `GADS_CLI_OAUTH_CLIENT_ID` noise.
+- **`test/oauth-login.proxy.test.js`** — happy path + device_id uniqueness + error handling + timeouts + `deleteRemoteSession()` behavior with mocked site endpoints.
+- **`test/session-store.test.js`** — additional coverage for v2.4 slim payloads (no refresh token) plus v2.3 backward-compatible payloads.
+
+### Changed
+- **`remote_login` tool** — rewritten around the proxy flow. No more PKCE loopback, no more `GADS_CLI_OAUTH_CLIENT_ID`, no more `GOOGLE_ADS_CLIENT_ID` required for Method 2.
+- **`remote_switch` tool** — now validates the stored `sessionId` against the site before switching; falls back to v2.3 refresh-token mint if one is still on disk; otherwise prompts the user to `/google-ads:login` again.
+- **`remote_logout` tool** — now calls `deleteRemoteSession()` on the site and instructs the user to visit `https://myaccount.google.com/permissions` to fully revoke Google access.
+- **`session-store.save()`** — `refreshToken` is now optional; `sessionId` is the required secret. v2.3 identities with stored refresh tokens keep working for auto-refresh; on next save they migrate to the slimmer v2.4 record.
+- **`autoRefreshSession()`** — v2.4 sign-ins no longer hit this path (site holds the refresh token under a 90-day session TTL); v2.3 identities with a stored refresh token still auto-refresh for backward compatibility.
+- **`README.md`** + locale callouts — "Sign in in 30 seconds, any Google account" section rewritten; Method 1 vs Method 2 table; new "Auth Tools" section; migration notes for v2.2 and v2.3 users.
+- **`commands/google-ads/login.toml`** — prompt rewritten to describe the proxy flow and forbid asking users for client IDs, refresh tokens, or session IDs.
+
+### Fixed
+- **OAuth policy error** on sign-in (`redirect_uri=http://127.0.0.1:XXXXX/callback` rejected because the extension's OAuth client was of type "Web application"). The proxy model eliminates the need for users to bring their own OAuth client at all.
+
+### Security
+- Google refresh tokens never touch the CLI — they stay encrypted on googleadsagent.ai under `auth:<sessionId>`.
+- Per-login random UUID `device_id`; the polling handle self-destructs on first read (5-minute TTL).
+- Only the opaque `sessionId` ever crosses back to the CLI; it's stored in the OS keychain via `keytar`, with a `0600`-permission gitignored file as fallback on systems without libsecret.
+
+### Migration notes
+- **v2.3 users**: no action required. Your existing `sessions.json` + keychain entries keep working. Running `/google-ads:login` for the same account silently upgrades that identity to the v2.4 record shape (refresh token removed from local storage).
+- **v2.2 users and earlier**: run `/google-ads:login` once — that's it.
+- Method 1 (static API credentials) is completely unchanged.
+
 ## [2.3.0] — 2026-04-16
 
 ### Added

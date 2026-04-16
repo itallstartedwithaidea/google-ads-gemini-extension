@@ -2,7 +2,7 @@
 
 **Talen:** [English](README.md) · [Français](README.fr.md) · [Español](README.es.md) · [中文](README.zh.md) · [Nederlands](README.nl.md) · [Русский](README.ru.md) · [한국어](README.ko.md)
 
-> **Nieuw in v2.3: inloggen met één commando.** Gebruik `/google-ads:login` om in de browser in te loggen met elk Google-account met toegang tot Google Ads (OAuth met PKCE) — geen session ID meer plakken. Refresh tokens worden in de sleutelhanger van je OS bewaard. Meerdere identiteiten worden ondersteund: `/google-ads:status`, `/google-ads:switch <email>`, `/google-ads:logout`. Zie [English README](README.md#step-5-sign-in-30-seconds-any-google-account) voor details.
+> **Nieuw in v2.4: inloggen zonder enige setup.** `/google-ads:login` delegeert de volledige Google-OAuth-flow aan [googleadsagent.ai](https://googleadsagent.ai) via een al geverifieerde OAuth-client — **geen Google Cloud Console, geen client ID, geen refresh tokens nodig**. Alleen een ondoorzichtige session ID wordt lokaal bewaard in de sleutelhanger van je OS. Meerdere identiteiten blijven ondersteund: `/google-ads:status`, `/google-ads:switch <email>`, `/google-ads:logout`. v2.3-identiteiten blijven automatisch werken. Zie [English README](README.md#step-5-sign-in-30-seconds-any-google-account) voor details.
 
 Een [Gemini CLI](https://github.com/google-gemini/gemini-cli)-extensie die je **live toegang tot de Google Ads API** geeft vanuit je terminal. Stel vragen over campagnes, vind verspilde uitgaven, audit accounts en krijg optimalisatieadvies — allemaal via natuurlijke conversatie.
 

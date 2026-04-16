@@ -2,7 +2,7 @@
 
 **Языки:** [English](README.md) · [Français](README.fr.md) · [Español](README.es.md) · [中文](README.zh.md) · [Nederlands](README.nl.md) · [Русский](README.ru.md) · [한국어](README.ko.md)
 
-> **Новое в v2.3: вход одной командой.** Теперь `/google-ads:login` открывает браузер и позволяет войти в любой аккаунт Google с доступом к Google Ads (OAuth с PKCE) — без копирования session ID. Refresh token хранится в связке ключей ОС. Поддержка нескольких аккаунтов: `/google-ads:status`, `/google-ads:switch <email>`, `/google-ads:logout`. Подробнее в [English README](README.md#step-5-sign-in-30-seconds-any-google-account).
+> **Новое в v2.4: вход без настройки.** `/google-ads:login` теперь делегирует весь OAuth-поток сервису [googleadsagent.ai](https://googleadsagent.ai) с его уже проверенным клиентом — **не нужны Google Cloud Console, client ID или refresh token**. Локально хранится только непрозрачный session ID в связке ключей ОС. Несколько аккаунтов по-прежнему поддерживаются: `/google-ads:status`, `/google-ads:switch <email>`, `/google-ads:logout`. Идентичности из v2.3 продолжают работать автоматически. Подробнее в [English README](README.md#step-5-sign-in-30-seconds-any-google-account).
 
 Расширение для [Gemini CLI](https://github.com/google-gemini/gemini-cli), которое даёт **прямой доступ к Google Ads API** из терминала. Спрашивайте о кампаниях, ищите лишние расходы, проводите аудит аккаунтов и получайте рекомендации по оптимизации — всё в естественном диалоге.
 
