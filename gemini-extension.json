@@ -1,7 +1,7 @@
 {
   "name": "google-ads-agent",
-  "version": "2.1.0",
-  "description": "Google Ads management for Gemini CLI — MCP server with live API tools, agent skills, commands, hooks, and custom theme. Ported from production at googleadsagent.ai.",
+  "version": "2.2.0",
+  "description": "Google Ads management for Gemini CLI — dual-backend MCP server with local API + remote googleadsagent.ai access. Live API tools, agent skills, commands, hooks, and custom theme.",
   "contextFileName": "GEMINI.md",
   "settings": [
     {
@@ -33,6 +33,18 @@
       "description": "Your MCC (Manager) account ID, format: 1234567890 (no dashes)",
       "envVar": "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
       "sensitive": false
+    },
+    {
+      "name": "Remote Site URL",
+      "description": "URL for googleadsagent.ai remote backend (e.g., https://googleadsagent.ai). Enables access to 700+ accounts via Cloudflare.",
+      "envVar": "GADS_SITE_URL",
+      "sensitive": false
+    },
+    {
+      "name": "Remote Site Session ID",
+      "description": "Session ID from googleadsagent.ai (found in browser localStorage as buddy_brain_sid). Enables remote account access.",
+      "envVar": "GADS_SITE_SESSION_ID",
+      "sensitive": true
     }
   ],
   "mcpServers": {
