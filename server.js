@@ -6,7 +6,7 @@ import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import * as sessionStore from "./lib/session-store.js";
-import { runLoginFlow, deleteRemoteSession } from "./lib/oauth-login.js";
+import { runLoginFlow, deleteRemoteSession, revokeRefreshToken } from "./lib/oauth-login.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 try {
@@ -19,7 +19,7 @@ try {
 
 const server = new McpServer({
   name: "google-ads-agent",
-  version: "2.4.0",
+  version: "2.4.1",
 });
 
 // ─── Rate Limiter ────────────────────────────────────────────────────────────
@@ -573,7 +573,7 @@ function localCredsStatus() {
 
 server.tool(
   "remote_login",
-  "Sign in to the Remote (googleadsagent.ai) backend with ANY Google account that has Google Ads access. Opens your browser, you approve on Google's screen, you come back. No Cloud Console setup, no client IDs, no secrets — googleadsagent.ai handles the OAuth dance and hands back an opaque session. The new identity becomes active for all Remote tool calls. You can run this again with a different Google account to add another identity; use remote_switch to hop between them.",
+  "Sign in to the Remote (googleadsagent.ai) backend with ANY Google account that has Google Ads access. Opens your browser at googleadsagent.ai's OAuth flow — no Cloud Console setup, no client IDs, no secrets ever touch the CLI. Comes back with an opaque session; the Google refresh token stays encrypted on the site. The new identity becomes active for all Remote tool calls. Run again with a different Google account to add another identity; use remote_switch to hop between them.",
   async () => {
     try {
       if (!SITE_URL) {
@@ -590,7 +590,7 @@ server.tool(
       });
 
       if (!result.email) {
-        return text("Sign-in completed but no email was returned. Please retry.");
+        return text("Sign-in completed, but the server did not return an email — aborting to avoid saving an anonymous identity. Try again or contact support.");
       }
 
       await sessionStore.save({
@@ -600,14 +600,14 @@ server.tool(
       });
       setActiveSession({ sessionId: result.sessionId, email: result.email });
 
+      const backend = (await sessionStore.backendInfo()).backend;
       const lines = [
         `✅ Signed in as **${result.email}**`,
         result.accountsCount != null ? `   ${result.accountsCount} Google Ads accounts accessible` : null,
         `   session: ${redactSecret(result.sessionId)}`,
-        `   backend: ${(await sessionStore.backendInfo()).backend} (session id only; Google refresh token stays on googleadsagent.ai)`,
+        `   storage: ${backend === "keychain" ? "OS keychain (keytar)" : "file (sessions.secrets.json, 0600)"}`,
         "",
-        "Active identity switched. Run `list_accounts` to see your accounts.",
-        promptUrl ? null : null,
+        "Active identity switched. Run `list_accounts` to see your accounts, or `/google-ads:login` again with a different Google account to add another identity.",
       ].filter(Boolean);
       return text(lines.join("\n"));
     } catch (e) {
@@ -618,49 +618,38 @@ server.tool(
 
 server.tool(
   "remote_switch",
-  "Switch the active Remote identity to a previously signed-in Google account. No browser, no re-auth — reuses the session already stored locally. If that session has expired (90-day TTL on googleadsagent.ai), run /google-ads:login again for that account.",
+  "Switch the active Remote identity to a previously signed-in Google account. No browser, no re-auth. In v2.4+ the stored opaque sessionId is reused directly (valid for 90 days server-side). For older v2.3 identities that still carry a refresh token, a fresh session is minted via the site. Use remote_status to list stored identities.",
   { email: z.string().email().describe("Email address of a stored identity (see remote_status)") },
   async ({ email }) => {
     try {
       if (!SITE_URL) return text("Remote backend not configured (GADS_SITE_URL missing).");
       const id = await sessionStore.getIdentity(email);
-      if (!id) return text(`No stored identity for ${email}. Run /google-ads:login first.`);
-      if (!id.sessionId) {
-        return text(`Stored identity for ${email} has no session id. Run /google-ads:login to re-authenticate.`);
-      }
+      if (!id) return text(`No stored identity for ${email}. Run /google-ads:login first (optionally from a Chrome profile already signed into that Google account).`);
 
-      // Validate the stored sessionId is still live on the site before
-      // switching. get_creds is cheap and tells us immediately.
-      const check = await fetch(`${SITE_URL}/api/auth`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "get_creds", sessionId: id.sessionId }),
-      });
-      const checkData = await check.json().catch(() => ({}));
-      if (check.ok && !checkData.error) {
+      // Happy path (v2.4+): the stored sessionId is the opaque handle — just use it.
+      if (id.sessionId) {
         await sessionStore.setActive(email);
         setActiveSession({ sessionId: id.sessionId, email });
-        return text(`✅ Active identity switched to **${email}**.`);
+        return text(`✅ Active identity switched to **${email}**. If this session expired (rare, 90-day TTL), run \`/google-ads:login\` to re-sign-in.`);
       }
 
-      // v2.3 fallback: if we still have a stored refresh token, mint a new
-      // session from it. v2.4 sign-ins won't hit this branch.
-      if (id.refreshToken) {
-        const mint = await fetch(`${SITE_URL}/api/auth`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "create_api_session", refreshToken: id.refreshToken }),
-        });
-        const mintData = await mint.json().catch(() => ({}));
-        if (mintData.sessionId) {
-          await sessionStore.updateSessionId(email, mintData.sessionId);
-          await sessionStore.setActive(email);
-          setActiveSession({ sessionId: mintData.sessionId, email });
-          return text(`✅ Active identity switched to **${email}** (refreshed, ${mintData.accounts ?? "?"} accounts).`);
-        }
+      // Legacy path (v2.3): mint a fresh session from the stored refresh token.
+      if (!id.refreshToken) {
+        return text(`Stored identity for ${email} has no session and no refresh token — please run /google-ads:login to re-sign-in.`);
       }
-
-      return text(`Session for ${email} has expired. Run \`/google-ads:login\` (sign in as ${email}) to re-authenticate — googleadsagent.ai remembers your prior consent.`);
+      const resp = await fetch(`${SITE_URL}/api/auth`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create_api_session", refreshToken: id.refreshToken }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!data.sessionId) {
+        return text(`Session mint failed for ${email}: ${data.error || resp.statusText}. Run /google-ads:login to re-sign-in.`);
+      }
+      await sessionStore.updateSessionId(email, data.sessionId);
+      await sessionStore.setActive(email);
+      setActiveSession({ sessionId: data.sessionId, email });
+      return text(`✅ Active identity switched to **${email}** (${data.accounts ?? "?"} accounts).`);
     } catch (e) {
       return text(`Switch failed: ${e.message}`);
     }
@@ -715,7 +704,7 @@ server.tool(
 
 server.tool(
   "remote_logout",
-  "Remove a stored Remote identity. If no email is given, removes the currently active one. Best-effort deletes the server-side session on googleadsagent.ai, then clears the OS keychain entry and sessions.json metadata. To fully revoke the Google grant (so the app can never be re-authorized silently) visit https://myaccount.google.com/permissions.",
+  "Remove a stored Remote identity and invalidate its session at googleadsagent.ai so the opaque session can't be reused. If no email is given, removes the currently active one. For legacy v2.3 identities that still carry a refresh token, also calls Google's revocation endpoint. This does NOT revoke your Google grant — visit https://myaccount.google.com/permissions for that.",
   { email: z.string().email().optional().describe("Email to log out. Defaults to the currently active identity.") },
   async ({ email }) => {
     try {
@@ -723,10 +712,18 @@ server.tool(
       const target = email || list.active;
       if (!target) return text("No active Remote identity to log out.");
       const id = await sessionStore.getIdentity(target);
+
+      // v2.4: invalidate the opaque session on the site.
       if (id?.sessionId && SITE_URL) {
         const ok = await deleteRemoteSession(SITE_URL, id.sessionId);
-        if (!ok) console.error(`[google-ads-agent] Remote session delete returned non-OK for ${target} (local cleanup continues).`);
+        if (!ok) console.error(`[google-ads-agent] Remote session delete returned non-OK for ${target} (ignored).`);
       }
+      // v2.3 legacy: if the identity still has a refresh token, revoke it at Google too.
+      if (id?.refreshToken) {
+        const revoked = await revokeRefreshToken(id.refreshToken);
+        if (!revoked) console.error(`[google-ads-agent] Token revoke returned non-OK for ${target} (ignored).`);
+      }
+
       const newActive = await sessionStore.remove(target);
       if (target === SITE_ACTIVE_EMAIL) {
         if (newActive) {
@@ -736,8 +733,10 @@ server.tool(
           setActiveSession({ sessionId: "", email: null });
         }
       }
-      const tail = newActive ? `Active is now **${newActive}**.` : "No more stored identities. Run `/google-ads:login` to sign in.";
-      return text(`✅ Removed **${target}**. ${tail}\nTo fully revoke Google access, visit https://myaccount.google.com/permissions.`);
+      const tail = newActive
+        ? `Active is now **${newActive}**.`
+        : "No more stored identities. Run `/google-ads:login` to sign in again.";
+      return text(`✅ Removed **${target}**. ${tail}`);
     } catch (e) {
       return text(`Logout failed: ${e.message}`);
     }
