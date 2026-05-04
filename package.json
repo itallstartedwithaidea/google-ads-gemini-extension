@@ -15,6 +15,9 @@
   "optionalDependencies": {
     "keytar": "^7.9.0"
   },
+  "overrides": {
+    "uuid": "^14.0.0"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
