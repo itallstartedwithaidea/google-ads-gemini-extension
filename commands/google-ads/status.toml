@@ -1,7 +1,7 @@
 prompt = """Show the authentication state of BOTH lanes of the Google Ads Agent:
 
 - **Method 1 (Local Google Ads API)**: whether the four required credentials are all set in .env (DEVELOPER_TOKEN, CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN) plus LOGIN_CUSTOMER_ID, and which are missing if any.
-- **Method 2 (Remote googleadsagent.ai)**: the active Google identity, all stored identities (with account counts and when they were added), and where the opaque session is stored (OS keychain vs 0600 file fallback). In v2.4+ no refresh token is stored in the CLI — the Google refresh token stays encrypted on the site.
+- **Method 2 (Remote ahmeego.com)**: the active Google identity, all stored identities (with account counts and when they were added), and where the opaque session is stored (OS keychain vs 0600 file fallback). In v2.4+ no refresh token is stored in the CLI — the Google refresh token stays encrypted on the site.
 
 Call the `remote_status` tool and present the output verbatim — it's already formatted for readability. If Method 1 is inactive, mention that it's independent of Method 2 and can be fixed separately by editing `~/.gemini/extensions/google-ads-agent/.env` (the relevant env var names are in the tool's missing list).
 

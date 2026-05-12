@@ -2,14 +2,14 @@
 
 **Idiomas:** [English](README.md) · [Français](README.fr.md) · [Español](README.es.md) · [中文](README.zh.md) · [Nederlands](README.nl.md) · [Русский](README.ru.md) · [한국어](README.ko.md)
 
-> **Novedad v2.4: inicio de sesión sin configuración.** `/google-ads:login` ahora delega todo el flujo OAuth a [googleadsagent.ai](https://googleadsagent.ai) con su cliente OAuth ya verificado — **no hace falta Google Cloud Console, client ID ni refresh token**. Solo se guarda localmente un ID de sesión opaco en el llavero del SO. Sigue soportando múltiples identidades: `/google-ads:status`, `/google-ads:switch <email>`, `/google-ads:logout`. Las identidades de v2.3 siguen funcionando automáticamente. Consulta el [README en inglés](README.md#step-5-sign-in-30-seconds-any-google-account) para más detalles.
+> **Novedad v2.4: inicio de sesión sin configuración.** `/google-ads:login` ahora delega todo el flujo OAuth a [ahmeego.com](https://ahmeego.com) con su cliente OAuth ya verificado — **no hace falta Google Cloud Console, client ID ni refresh token**. Solo se guarda localmente un ID de sesión opaco en el llavero del SO. Sigue soportando múltiples identidades: `/google-ads:status`, `/google-ads:switch <email>`, `/google-ads:logout`. Las identidades de v2.3 siguen funcionando automáticamente. Consulta el [README en inglés](README.md#step-5-sign-in-30-seconds-any-google-account) para más detalles.
 
 Una extensión de [Gemini CLI](https://github.com/google-gemini/gemini-cli) que te da **acceso en vivo a la API de Google Ads** desde la terminal. Pregunta por tus campañas, detecta gasto desperdiciado, audita cuentas y obtén recomendaciones de optimización, todo mediante conversación natural.
 
 <img width="1196" height="1058" alt="image" src="https://github.com/user-attachments/assets/ab7b2dbf-6cdc-41ef-94b0-0288f87f3b4a" />
 
 
-Construida a partir de la experiencia en producción de un agente de Google Ads con IA en [googleadsagent.ai](https://googleadsagent.ai): 28 acciones personalizadas de la API, 6 subagentes y gestión de cuentas reales de Google Ads mediante la API de Google Ads v23.
+Construida a partir de la experiencia en producción de un agente de Google Ads con IA en [ahmeego.com](https://ahmeego.com): 28 acciones personalizadas de la API, 6 subagentes y gestión de cuentas reales de Google Ads mediante la API de Google Ads v23.
 
 
 <img width="1392" height="928" alt="image" src="https://github.com/user-attachments/assets/377c8d23-acc9-4f05-a0b6-95f3667cf12d" />
@@ -343,7 +343,7 @@ Los cambios se recargan solos; no hace falta reinstalar.
 - [google-ads-skills](https://github.com/itallstartedwithaidea/google-ads-skills) — Anthropic Agent Skills para Claude (análisis, auditoría, escritura, matemáticas, MCP)
 - [google-ads-mcp](https://github.com/itallstartedwithaidea/google-ads-mcp) — Servidor MCP en Python con 29 herramientas
 - [google-ads-api-agent](https://github.com/itallstartedwithaidea/google-ads-api-agent) — Agente Python completo con 28 acciones de API y 6 subagentes
-- [googleadsagent.ai](https://googleadsagent.ai) — Sistema en producción (Buddy) en Cloudflare
+- [ahmeego.com](https://ahmeego.com) — Sistema en producción (Buddy) en Cloudflare
 - [Gemini CLI Extension Docs](https://geminicli.com/docs/extensions/writing-extensions/)
 - [Extension Gallery](https://geminicli.com/extensions/browse/)
 

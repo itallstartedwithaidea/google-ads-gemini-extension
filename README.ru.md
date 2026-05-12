@@ -2,14 +2,14 @@
 
 **Языки:** [English](README.md) · [Français](README.fr.md) · [Español](README.es.md) · [中文](README.zh.md) · [Nederlands](README.nl.md) · [Русский](README.ru.md) · [한국어](README.ko.md)
 
-> **Новое в v2.4: вход без настройки.** `/google-ads:login` теперь делегирует весь OAuth-поток сервису [googleadsagent.ai](https://googleadsagent.ai) с его уже проверенным клиентом — **не нужны Google Cloud Console, client ID или refresh token**. Локально хранится только непрозрачный session ID в связке ключей ОС. Несколько аккаунтов по-прежнему поддерживаются: `/google-ads:status`, `/google-ads:switch <email>`, `/google-ads:logout`. Идентичности из v2.3 продолжают работать автоматически. Подробнее в [English README](README.md#step-5-sign-in-30-seconds-any-google-account).
+> **Новое в v2.4: вход без настройки.** `/google-ads:login` теперь делегирует весь OAuth-поток сервису [ahmeego.com](https://ahmeego.com) с его уже проверенным клиентом — **не нужны Google Cloud Console, client ID или refresh token**. Локально хранится только непрозрачный session ID в связке ключей ОС. Несколько аккаунтов по-прежнему поддерживаются: `/google-ads:status`, `/google-ads:switch <email>`, `/google-ads:logout`. Идентичности из v2.3 продолжают работать автоматически. Подробнее в [English README](README.md#step-5-sign-in-30-seconds-any-google-account).
 
 Расширение для [Gemini CLI](https://github.com/google-gemini/gemini-cli), которое даёт **прямой доступ к Google Ads API** из терминала. Спрашивайте о кампаниях, ищите лишние расходы, проводите аудит аккаунтов и получайте рекомендации по оптимизации — всё в естественном диалоге.
 
 <img width="1196" height="1058" alt="image" src="https://github.com/user-attachments/assets/ab7b2dbf-6cdc-41ef-94b0-0288f87f3b4a" />
 
 
-Создано на основе продакшн-опыта AI-агента Google Ads на [googleadsagent.ai](https://googleadsagent.ai) — 28 пользовательских действий API, 6 субагентов, управление реальными аккаунтами Google Ads через Google Ads API v23.
+Создано на основе продакшн-опыта AI-агента Google Ads на [ahmeego.com](https://ahmeego.com) — 28 пользовательских действий API, 6 субагентов, управление реальными аккаунтами Google Ads через Google Ads API v23.
 
 
 <img width="1392" height="928" alt="image" src="https://github.com/user-attachments/assets/377c8d23-acc9-4f05-a0b6-95f3667cf12d" />
@@ -343,7 +343,7 @@ gemini extensions link .
 - [google-ads-skills](https://github.com/itallstartedwithaidea/google-ads-skills) — Anthropic Agent Skills для Claude (анализ, аудит, запись, расчёты, MCP)
 - [google-ads-mcp](https://github.com/itallstartedwithaidea/google-ads-mcp) — Python MCP-сервер с 29 инструментами
 - [google-ads-api-agent](https://github.com/itallstartedwithaidea/google-ads-api-agent) — полный Python-агент: 28 действий API и 6 субагентов
-- [googleadsagent.ai](https://googleadsagent.ai) — продакшн-система (Buddy) на Cloudflare
+- [ahmeego.com](https://ahmeego.com) — продакшн-система (Buddy) на Cloudflare
 - [Gemini CLI Extension Docs](https://geminicli.com/docs/extensions/writing-extensions/)
 - [Extension Gallery](https://geminicli.com/extensions/browse/)
 

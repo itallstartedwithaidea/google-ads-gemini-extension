@@ -2,14 +2,14 @@
 
 **语言：** [English](README.md) · [Français](README.fr.md) · [Español](README.es.md) · [中文](README.zh.md) · [Nederlands](README.nl.md) · [Русский](README.ru.md) · [한국어](README.ko.md)
 
-> **v2.4 新功能：真正的零配置登录。** `/google-ads:login` 现在通过 [googleadsagent.ai](https://googleadsagent.ai) 的已验证 OAuth 客户端完成整个登录流程，**完全不需要 Google Cloud Console、客户端 ID 或刷新令牌**。只保存一个不透明的会话 ID 到操作系统钥匙串。仍然支持多账号：`/google-ads:status`、`/google-ads:switch <email>`、`/google-ads:logout`。v2.3 的身份自动兼容。详见 [English README](README.md#step-5-sign-in-30-seconds-any-google-account)。
+> **v2.4 新功能：真正的零配置登录。** `/google-ads:login` 现在通过 [ahmeego.com](https://ahmeego.com) 的已验证 OAuth 客户端完成整个登录流程，**完全不需要 Google Cloud Console、客户端 ID 或刷新令牌**。只保存一个不透明的会话 ID 到操作系统钥匙串。仍然支持多账号：`/google-ads:status`、`/google-ads:switch <email>`、`/google-ads:logout`。v2.3 的身份自动兼容。详见 [English README](README.md#step-5-sign-in-30-seconds-any-google-account)。
 
 一款 [Gemini CLI](https://github.com/google-gemini/gemini-cli) 扩展，让你在终端中**实时访问 Google Ads API**。用自然语言询问广告系列、发现浪费的支出、审计账号并获取优化建议。
 
 <img width="1196" height="1058" alt="image" src="https://github.com/user-attachments/assets/ab7b2dbf-6cdc-41ef-94b0-0288f87f3b4a" />
 
 
-基于在 [googleadsagent.ai](https://googleadsagent.ai) 运行 AI Google Ads 代理的生产经验构建 — 28 个自定义 API 操作、6 个子代理，通过 Google Ads API v23 管理真实 Google Ads 账号。
+基于在 [ahmeego.com](https://ahmeego.com) 运行 AI Google Ads 代理的生产经验构建 — 28 个自定义 API 操作、6 个子代理，通过 Google Ads API v23 管理真实 Google Ads 账号。
 
 
 <img width="1392" height="928" alt="image" src="https://github.com/user-attachments/assets/377c8d23-acc9-4f05-a0b6-95f3667cf12d" />
@@ -343,7 +343,7 @@ gemini extensions link .
 - [google-ads-skills](https://github.com/itallstartedwithaidea/google-ads-skills) — 面向 Claude 的 Anthropic Agent Skills（分析、审计、写入、数学、MCP）
 - [google-ads-mcp](https://github.com/itallstartedwithaidea/google-ads-mcp) — 含 29 个工具的 Python MCP 服务器
 - [google-ads-api-agent](https://github.com/itallstartedwithaidea/google-ads-api-agent) — 完整 Python 代理，28 个 API 操作与 6 个子代理
-- [googleadsagent.ai](https://googleadsagent.ai) — Cloudflare 上的生产系统（Buddy）
+- [ahmeego.com](https://ahmeego.com) — Cloudflare 上的生产系统（Buddy）
 - [Gemini CLI Extension Docs](https://geminicli.com/docs/extensions/writing-extensions/)
 - [Extension Gallery](https://geminicli.com/extensions/browse/)
 

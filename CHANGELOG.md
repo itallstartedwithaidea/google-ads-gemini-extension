@@ -4,6 +4,17 @@ All notable changes to the `google-ads-gemini-extension` (installed as `google-a
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.2] — 2026-05-12
+
+### Changed
+- **Rebranded the proxy backend domain from `googleadsagent.ai` to `ahmeego.com`.** The previous domain remains live as a 301-redirect alias and continues to work for existing sessions; new installs should use the new domain. The Cloudflare Pages project, OAuth client, and API routes are unchanged — only the canonical hostname moved.
+- `.env.example` default updated: `GADS_SITE_URL=https://ahmeego.com`.
+- README, GEMINI.md, command prompts, and tool descriptions now reference `ahmeego.com`. CHANGELOG history (this file's prior entries) is preserved as-is for accurate version history.
+
+### Migration
+- **Existing users — no action required if you don't care about cosmetics.** Your current keychain session is still valid; the old domain still resolves.
+- **To pick up the new domain locally:** edit `~/.gemini/extensions/google-ads-agent/.env` and set `GADS_SITE_URL=https://ahmeego.com`, then run `/google-ads:logout` followed by `/google-ads:login` to mint a fresh session against the new domain.
+
 ## [2.4.1] — 2026-04-16
 
 ### Fixed
@@ -76,6 +87,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - GAQL write-blocking hook (blocks non-SELECT operations).
 - Audit logging hook writing to `~/.gemini/logs/google-ads-agent.log`.
 
+[2.4.2]: https://github.com/itallstartedwithaidea/google-ads-gemini-extension/releases/tag/v2.4.2
 [2.4.1]: https://github.com/itallstartedwithaidea/google-ads-gemini-extension/releases/tag/v2.4.1
 [2.4.0]: https://github.com/itallstartedwithaidea/google-ads-gemini-extension/releases/tag/v2.4.0
 [2.3.0]: https://github.com/itallstartedwithaidea/google-ads-gemini-extension/releases/tag/v2.3.0

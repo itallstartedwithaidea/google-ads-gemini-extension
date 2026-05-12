@@ -1,9 +1,9 @@
-prompt = """Remove a stored Remote (googleadsagent.ai) identity. This does NOT touch Method 1 (static API credentials in .env).
+prompt = """Remove a stored Remote (ahmeego.com) identity. This does NOT touch Method 1 (static API credentials in .env).
 
 Call `remote_logout` with the email the user specified. If no email was given, call it without arguments to log out the currently active identity.
 
 The tool will:
-1. Call googleadsagent.ai to invalidate the opaque session server-side so it can't be reused.
+1. Call ahmeego.com to invalidate the opaque session server-side so it can't be reused.
 2. For legacy v2.3 identities that still carry a refresh token, also revoke that refresh token at Google.
 3. Delete the secret entry from the OS keychain (or the 0600 fallback file).
 4. Remove the identity from sessions.json metadata.
@@ -11,7 +11,7 @@ The tool will:
 
 Report the outcome: which email was removed, and what the active identity is now (or "none — run `/google-ads:login` to sign in again").
 
-Also mention: this does NOT revoke the user's Google grant. If they want to fully revoke googleadsagent.ai's access to their Google account, they should visit https://myaccount.google.com/permissions.
+Also mention: this does NOT revoke the user's Google grant. If they want to fully revoke ahmeego.com's access to their Google account, they should visit https://myaccount.google.com/permissions.
 
 <user_request>
 {{args}}

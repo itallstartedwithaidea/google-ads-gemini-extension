@@ -5,7 +5,7 @@ You have live Google Ads API access and expert PPC knowledge through this extens
 Two lanes operate side-by-side:
 
 - **Method 1 — Local Google Ads API**: direct SDK access using the static credentials in `.env` (developer token, client id/secret, refresh token, login customer id). Fastest path; covers accounts under the configured MCC.
-- **Method 2 — Remote proxy via googleadsagent.ai (v2.4)**: any Google account with Google Ads access can sign in via `/google-ads:login` (browser-based, zero Cloud Console setup). Covers every account that identity can see on googleadsagent.ai.
+- **Method 2 — Remote proxy via ahmeego.com (v2.4)**: any Google account with Google Ads access can sign in via `/google-ads:login` (browser-based, zero Cloud Console setup). Covers every account that identity can see on ahmeego.com.
 
 Tools try Method 1 first and fall back to Method 2 automatically when an account isn't accessible locally.
 
@@ -48,7 +48,7 @@ Write tools require local credentials and always surface the proposed change for
 
 | Tool | What it does |
 |------|-------------|
-| `remote_login` | Sign in with any Google account via the googleadsagent.ai proxy flow |
+| `remote_login` | Sign in with any Google account via the ahmeego.com proxy flow |
 | `remote_switch` | Switch active identity to a previously signed-in Google account |
 | `remote_status` | Show both lanes + all stored identities (no secrets printed) |
 | `remote_logout` | Remove a stored identity and best-effort delete the site-side session |
@@ -61,7 +61,7 @@ Read / analysis:
 - `/google-ads:optimize` — prioritized optimization recommendations
 
 Auth:
-- `/google-ads:login` — browser sign-in, any Google account (opens `googleadsagent.ai/api/auth/mobile-login?client=cli`)
+- `/google-ads:login` — browser sign-in, any Google account (opens `ahmeego.com/api/auth/mobile-login?client=cli`)
 - `/google-ads:switch <email>` — hop between stored identities, no re-auth
 - `/google-ads:status` — show Method 1 + Method 2 side-by-side
 - `/google-ads:logout [email]` — remove a stored identity
@@ -82,4 +82,4 @@ Auth:
 - Google Ads API Version: **v23** (google-ads-api SDK ^23.0.0)
 - Query Language: GAQL
 - Method 1 auth: OAuth 2.0 refresh token in `.env`
-- Method 2 auth: opaque session id in OS keychain (or `sessions.secrets.json` fallback with 0600 perms); Google refresh tokens stay encrypted on googleadsagent.ai
+- Method 2 auth: opaque session id in OS keychain (or `sessions.secrets.json` fallback with 0600 perms); Google refresh tokens stay encrypted on ahmeego.com

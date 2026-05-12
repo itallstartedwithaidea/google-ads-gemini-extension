@@ -1,7 +1,7 @@
 {
   "name": "google-ads-agent",
-  "version": "2.4.1",
-  "description": "Google Ads management for Gemini CLI — dual-lane sign-in (static API + zero-setup proxy OAuth via googleadsagent.ai), multi-identity with OS keychain, dual-backend MCP server with local API + remote googleadsagent.ai access. Live API tools, agent skills, commands, hooks, and custom theme.",
+  "version": "2.4.2",
+  "description": "Google Ads management for Gemini CLI — dual-lane sign-in (static API + zero-setup proxy OAuth via ahmeego.com), multi-identity with OS keychain, dual-backend MCP server with local API + remote ahmeego.com access. Live API tools, agent skills, commands, hooks, and custom theme.",
   "contextFileName": "GEMINI.md",
   "settings": [
     {
@@ -36,7 +36,7 @@
     },
     {
       "name": "Remote Site URL",
-      "description": "URL for googleadsagent.ai remote backend (e.g., https://googleadsagent.ai). Enables access to 700+ accounts via Cloudflare.",
+      "description": "URL for ahmeego.com remote backend (e.g., https://ahmeego.com). Enables access to 700+ accounts via Cloudflare.",
       "envVar": "GADS_SITE_URL",
       "sensitive": false
     },

@@ -19,7 +19,7 @@ try {
 
 const server = new McpServer({
   name: "google-ads-agent",
-  version: "2.4.1",
+  version: "2.4.2",
 });
 
 // ─── Rate Limiter ────────────────────────────────────────────────────────────
@@ -94,7 +94,7 @@ function safeError(e) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DUAL BACKEND — Local google-ads-api + Remote googleadsagent.ai
+// DUAL BACKEND — Local google-ads-api + Remote ahmeego.com
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const SITE_URL = (process.env.GADS_SITE_URL || "").replace(/\/+$/, "");
@@ -573,11 +573,11 @@ function localCredsStatus() {
 
 server.tool(
   "remote_login",
-  "Sign in to the Remote (googleadsagent.ai) backend with ANY Google account that has Google Ads access. Opens your browser at googleadsagent.ai's OAuth flow — no Cloud Console setup, no client IDs, no secrets ever touch the CLI. Comes back with an opaque session; the Google refresh token stays encrypted on the site. The new identity becomes active for all Remote tool calls. Run again with a different Google account to add another identity; use remote_switch to hop between them.",
+  "Sign in to the Remote (ahmeego.com) backend with ANY Google account that has Google Ads access. Opens your browser at ahmeego.com's OAuth flow — no Cloud Console setup, no client IDs, no secrets ever touch the CLI. Comes back with an opaque session; the Google refresh token stays encrypted on the site. The new identity becomes active for all Remote tool calls. Run again with a different Google account to add another identity; use remote_switch to hop between them.",
   async () => {
     try {
       if (!SITE_URL) {
-        return text("Remote backend not configured. Set GADS_SITE_URL in your extension .env (e.g., https://googleadsagent.ai).");
+        return text("Remote backend not configured. Set GADS_SITE_URL in your extension .env (e.g., https://ahmeego.com).");
       }
 
       let promptUrl = null;
@@ -658,7 +658,7 @@ server.tool(
 
 server.tool(
   "remote_status",
-  "Show the current authentication state of BOTH lanes: Method 1 (Local Google Ads API) and Method 2 (Remote googleadsagent.ai). Lists all stored Remote identities and which one is active. Never prints tokens.",
+  "Show the current authentication state of BOTH lanes: Method 1 (Local Google Ads API) and Method 2 (Remote ahmeego.com). Lists all stored Remote identities and which one is active. Never prints tokens.",
   async () => {
     try {
       const [list, backend, local] = await Promise.all([
@@ -678,7 +678,7 @@ server.tool(
         lines.push(`  fix:     run \`gemini extensions config google-ads-agent\` or set env vars in .env`);
       }
       lines.push("");
-      lines.push("## Method 2 — Remote (googleadsagent.ai)");
+      lines.push("## Method 2 — Remote (ahmeego.com)");
       if (!SITE_URL) {
         lines.push(`  status:  unconfigured (set GADS_SITE_URL)`);
       } else {
@@ -704,7 +704,7 @@ server.tool(
 
 server.tool(
   "remote_logout",
-  "Remove a stored Remote identity and invalidate its session at googleadsagent.ai so the opaque session can't be reused. If no email is given, removes the currently active one. For legacy v2.3 identities that still carry a refresh token, also calls Google's revocation endpoint. This does NOT revoke your Google grant — visit https://myaccount.google.com/permissions for that.",
+  "Remove a stored Remote identity and invalidate its session at ahmeego.com so the opaque session can't be reused. If no email is given, removes the currently active one. For legacy v2.3 identities that still carry a refresh token, also calls Google's revocation endpoint. This does NOT revoke your Google grant — visit https://myaccount.google.com/permissions for that.",
   { email: z.string().email().optional().describe("Email to log out. Defaults to the currently active identity.") },
   async ({ email }) => {
     try {
@@ -747,7 +747,7 @@ server.tool(
 
 server.tool(
   "list_accounts",
-  "List all Google Ads accounts accessible under the configured MCC. Merges local + remote (googleadsagent.ai) if both are configured.",
+  "List all Google Ads accounts accessible under the configured MCC. Merges local + remote (ahmeego.com) if both are configured.",
   async () => {
     try {
       checkRateLimit("list_accounts");
@@ -2115,7 +2115,7 @@ server.tool(
 
 server.tool(
   "connection_status",
-  "Show which backends are configured — local Google Ads API and/or remote googleadsagent.ai.",
+  "Show which backends are configured — local Google Ads API and/or remote ahmeego.com.",
   async () => {
     try {
       const lines = [];
@@ -2136,7 +2136,7 @@ server.tool(
           lines.push(`**Remote (${SITE_URL})**: Error — ${e.message.slice(0, 100)}`);
         }
       } else {
-        lines.push("**Remote (googleadsagent.ai)**: Not configured — set GADS_SITE_URL and GADS_SITE_SESSION_ID");
+        lines.push("**Remote (ahmeego.com)**: Not configured — set GADS_SITE_URL and GADS_SITE_SESSION_ID");
       }
 
       lines.push("\n**Routing**: Tools try local first, fall back to remote if the account isn't accessible locally.");
@@ -2151,7 +2151,7 @@ server.tool(
 
 server.tool(
   "switch_remote_account",
-  "Switch the active account on the remote googleadsagent.ai backend. Use list_accounts to find IDs first.",
+  "Switch the active account on the remote ahmeego.com backend. Use list_accounts to find IDs first.",
   {
     customer_id: customerIdSchema,
   },
@@ -3300,7 +3300,7 @@ server.tool(
 
 server.tool(
   "run_remote_query",
-  "Execute any query on the remote googleadsagent.ai backend. Use this for actions not covered by dedicated tools. Valid actions: account_summary, campaign_count, list_campaigns, list_ad_groups, list_keywords, list_search_terms, wasted_spend, list_ads, list_budgets, geo_performance, device_performance, change_history, list_recommendations, list_conversions, list_audiences, list_asset_groups, list_bidding_strategies, list_labels, list_negative_keyword_lists, list_extensions, ad_schedule_performance, list_experiments, landing_page_performance, quality_score_report, impression_share, daily_performance, campaign_daily, hourly_performance, age_performance, gender_performance, auction_insights, video_campaign_performance, video_ad_performance, shopping_performance, product_group_performance, pmax_asset_performance, pmax_listing_groups, placement_performance, topic_performance, ad_group_audience_performance, list_user_lists, parental_status_performance, income_performance, list_campaign_criteria, shared_budget_detail, conversion_action_detail.",
+  "Execute any query on the remote ahmeego.com backend. Use this for actions not covered by dedicated tools. Valid actions: account_summary, campaign_count, list_campaigns, list_ad_groups, list_keywords, list_search_terms, wasted_spend, list_ads, list_budgets, geo_performance, device_performance, change_history, list_recommendations, list_conversions, list_audiences, list_asset_groups, list_bidding_strategies, list_labels, list_negative_keyword_lists, list_extensions, ad_schedule_performance, list_experiments, landing_page_performance, quality_score_report, impression_share, daily_performance, campaign_daily, hourly_performance, age_performance, gender_performance, auction_insights, video_campaign_performance, video_ad_performance, shopping_performance, product_group_performance, pmax_asset_performance, pmax_listing_groups, placement_performance, topic_performance, ad_group_audience_performance, list_user_lists, parental_status_performance, income_performance, list_campaign_criteria, shared_budget_detail, conversion_action_detail.",
   {
     customer_id: customerIdSchema,
     action: z.string().describe("The remote API action to execute"),
