@@ -1,6 +1,6 @@
 {
   "name": "google-ads-agent",
-  "version": "2.4.2",
+  "version": "2.4.3",
   "description": "Google Ads management for Gemini CLI — dual-lane sign-in (static API + zero-setup proxy OAuth via ahmeego.com), multi-identity with OS keychain, dual-backend MCP server with local API + remote ahmeego.com access. Live API tools, agent skills, commands, hooks, and custom theme.",
   "contextFileName": "GEMINI.md",
   "settings": [

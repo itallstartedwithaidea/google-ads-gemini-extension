@@ -4,6 +4,28 @@ All notable changes to the `google-ads-gemini-extension` (installed as `google-a
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.3] — 2026-05-12
+
+### Added
+- **`scripts/refresh-local-token.py`** — one-shot Method 1 refresh-token regenerator. Reads `client_id` / `client_secret` from `google-ads.yaml`, runs the InstalledAppFlow OAuth dance on a pinned port (`http://localhost:8081/` to match the most common Cloud Console registration), captures the new refresh token, and rewrites the YAML in place. Replaces the manual OAuth Playground click-fest from the previous setup guide.
+- **README "TL;DR — The Two Commands That Solve Most Problems"** — front-loaded section explaining the universal `/quit` → `gemini` → `/google-ads:logout` → `/google-ads:login` recovery sequence and *why* a chat-level restart isn't enough.
+- **README "First-Time Setup — Click by Click"** — literal step-by-step beginner walkthrough, including which buttons to click in Google's consent screens.
+- **README "Common Gotchas" section** — five field-tested issues with root-cause explanations:
+  1. "0 accounts available" right after login → MCP server captured `GADS_SITE_URL` at startup, full process restart needed
+  2. `redirect_uri_mismatch` from the local-token script → Cloud Console "Authorized redirect URIs" missing `http://localhost:8081/` (with trailing slash)
+  3. `invalid_grant` from Method 1 → refresh token lifecycle and how to regenerate
+  4. "Sign-in timed out after 120s" but browser said "Success" → just re-run `/google-ads:login`
+  5. "0 leaf accounts found" on an MCC → access scoping vs stale env distinction
+- **Expanded Troubleshooting table** — pre-existing entries kept; added rows for `redirect_uri_mismatch`, "0 accounts available", "Site credentials unavailable", `invalid_grant`, "Sign-in timed out", and `tail -f` of the audit log.
+
+### Changed
+- Replaced the **"Getting Credentials → From OAuth Playground"** section with the helper-script path. Playground stays documented as a fallback.
+- Step-by-step setup now explicitly tells users to add `http://localhost:8081/` to their OAuth client's Authorized redirect URIs during initial Cloud Console setup, so they avoid Common Gotcha #2 from the start.
+- Extension structure tree in the README now lists `scripts/`.
+
+### Migration
+- No behavior changes. v2.4.2 keychains and configs work as-is. New script is purely additive.
+
 ## [2.4.2] — 2026-05-12
 
 ### Changed
@@ -88,6 +110,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - Audit logging hook writing to `~/.gemini/logs/google-ads-agent.log`.
 
 [2.4.2]: https://github.com/itallstartedwithaidea/google-ads-gemini-extension/releases/tag/v2.4.2
+[2.4.3]: https://github.com/itallstartedwithaidea/google-ads-gemini-extension/releases/tag/v2.4.3
 [2.4.1]: https://github.com/itallstartedwithaidea/google-ads-gemini-extension/releases/tag/v2.4.1
 [2.4.0]: https://github.com/itallstartedwithaidea/google-ads-gemini-extension/releases/tag/v2.4.0
 [2.3.0]: https://github.com/itallstartedwithaidea/google-ads-gemini-extension/releases/tag/v2.3.0

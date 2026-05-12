@@ -6,9 +6,41 @@ Built from production learnings running an AI Google Ads agent at [ahmeego.com](
 
 ---
 
-## Quick Start (5 minutes)
+## TL;DR — The Two Commands That Solve Most Problems
 
-### Step 1: Install Node.js (if you don't have it)
+If you've already installed everything and something stops working, **try these in order before anything else:**
+
+```text
+/quit                                # in the Gemini CLI
+gemini                               # restart the whole process (NOT just /clear)
+/google-ads:logout
+/google-ads:login                    # browser opens, pick your Google account, approve
+list my Google Ads accounts          # ask in plain English; should return your accounts
+```
+
+Why these specifically? Because **the MCP server reads `GADS_SITE_URL` and your `.env` exactly once at process startup.** If you edit `.env` while Gemini is running, those changes don't take effect until you `/quit` and re-launch. This single behavior caused ~80% of "0 accounts available" / "session expired" reports we've seen. See [Common Gotchas](#common-gotchas) before you debug anything else.
+
+---
+
+## First-Time Setup — Click by Click
+
+Use this if you've never set anything up. Each step is one literal action.
+
+### Step 0 — Decide your auth lane
+
+**Don't pick yet — read both, then come back.** Most people end up doing **Method 2 first** and adding Method 1 later (or never).
+
+| | Method 1 — Local API (`.env` + `google-ads.yaml`) | Method 2 — Browser sign-in (`/google-ads:login`) |
+|---|---|---|
+| Setup time | ~10 min, requires Cloud Console | ~30 sec, click button in browser |
+| What you need | Developer token, Client ID/Secret, Refresh token, MCC ID | Just a Google account with Google Ads access |
+| Who it's for | Power users, CI/CD, fixed machine identity | Everyone else (recommended) |
+| When it breaks | `invalid_grant` after 6 months / password change | Almost never |
+| Fix when broken | Re-run `scripts/refresh-local-token.py` | Re-run `/google-ads:login` |
+
+**If unsure, do Method 2 only. Skip to Step 4.**
+
+### Step 1 — Install Node.js (if you don't have it)
 
 ```bash
 # Check if you already have it
@@ -20,54 +52,156 @@ brew install node
 # Or download from https://nodejs.org (Windows/Linux/macOS)
 ```
 
-### Step 2: Install Gemini CLI
+### Step 2 — Install Gemini CLI
 
 ```bash
 npm install -g @google/gemini-cli
 ```
 
-### Step 3: Get a Gemini API key (free)
+Verify with `gemini --version`. If you get `command not found`, your global npm bin isn't on `$PATH` — see [Troubleshooting](#troubleshooting).
 
-1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
-2. Click **Create API Key**
-3. Copy it, then save it:
+### Step 3 — Get a Gemini API key (free)
+
+1. Open [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+2. Click **Create API key** (blue button, top right)
+3. Click **Create API key in new project** if it asks
+4. Click the **copy** icon next to the key
+5. Save it:
 
 ```bash
 mkdir -p ~/.gemini
-echo 'GEMINI_API_KEY=your-key-here' > ~/.gemini/.env
+echo 'GEMINI_API_KEY=PASTE_KEY_HERE' > ~/.gemini/.env
 ```
 
-The free tier gives you 60 requests/minute and 1,000/day — more than enough.
+Free tier: 60 requests/min, 1,000/day. You won't hit it.
 
-### Step 4: Install this extension
+### Step 4 — Install this extension
 
 ```bash
 gemini extensions install https://github.com/itallstartedwithaidea/google-ads-gemini-extension
 ```
 
-### Step 5: Sign in (30 seconds, any Google account)
+You'll see `Successfully installed extension google-ads-agent`. The extension now auto-loads every time you launch Gemini.
 
-As of v2.3, signing in is one command — the extension opens your browser, you pick any Google account with Google Ads access, and you're done. No copy-pasting session IDs, no OAuth Playground, no manual `.env` editing.
+### Step 5 — Sign in (Method 2, recommended)
 
 ```bash
 gemini
 ```
 
-Then in the CLI:
+Wait for the welcome banner. Then **type these two commands one at a time** (press Enter between them):
 
+```text
+/google-ads:logout
+/google-ads:login
 ```
-> /google-ads:login
-```
 
-What happens:
+What you'll see, in order:
 
-1. Your default browser opens to Google's consent screen
-2. Pick any Google account that has Google Ads access
-3. Approve the one scope (`adwords`)
-4. The tab auto-closes — you're back in the terminal
-5. The extension prints `✅ Signed in as you@example.com — 123 accounts accessible`
+1. **Browser opens** to a Google sign-in page (`accounts.google.com/...`)
+2. **Pick a Google account** that has Google Ads access (or click "Use another account")
+3. **Click "Continue"** on the AHMEEGO consent screen
+4. **Click "Allow"** on the Google Ads permission scope
+5. Browser shows **"You can close this tab"** — close it
+6. Back in Gemini you'll see `✅ Signed in as you@example.com`
 
 An opaque session ID is stored in your **OS keychain** (macOS Keychain / Windows Credential Manager / Linux libsecret) via [keytar](https://github.com/atom/node-keytar). If keychain isn't available, the extension falls back to a `0600`-permission file that's gitignored. **The Google refresh token never leaves ahmeego.com** — it stays encrypted at-rest on the site and the CLI only ever sees the session handle.
+
+### Step 6 — Verify it works
+
+In the same Gemini session, type:
+
+```text
+list my Google Ads accounts
+```
+
+You should see a table of your accounts. If you see **0 accounts** but you know you have access, it's almost always a stale env var — see [Common Gotchas](#common-gotchas) #1 below.
+
+---
+
+## Common Gotchas
+
+These are the issues that cost real users (and us) the most time. **Read this section before opening an issue.**
+
+### 1. "0 accounts available" right after a successful login
+
+**Symptom:** `/google-ads:login` succeeds, browser shows "Success", but `list_accounts` returns 0 — even though you know the Google account has access (you can see the accounts at [ads.google.com](https://ads.google.com)).
+
+**Cause:** The MCP server captured `GADS_SITE_URL` (and other env vars) at process startup. If you edited `~/.gemini/extensions/google-ads-agent/.env` after Gemini was already running, the server is still pointed at the old value. The login itself works because the browser follows redirects, but the session lookup goes to the wrong host afterward.
+
+**Fix — and this is the universal "did you turn it off and on again" for this extension:**
+
+```text
+/quit                                    # in the Gemini CLI
+gemini                                   # NEW process, not /clear
+/google-ads:logout
+/google-ads:login
+```
+
+`/clear` is **not** enough. `/restart` is **not** enough. You need a full Node process restart so it re-reads the `.env`.
+
+### 2. `redirect_uri_mismatch` when running the local-token script
+
+**Symptom:** You run `python scripts/refresh-local-token.py`, the browser opens, you sign in, and Google shows:
+
+> Access blocked: This app's request is invalid  
+> Error 400: redirect_uri_mismatch
+
+**Cause:** Your OAuth client (in [Google Cloud Console](https://console.cloud.google.com/apis/credentials)) doesn't have `http://localhost:8081/` in its **Authorized redirect URIs** list. "Web application" OAuth clients require an exact match — no wildcards, no implicit ports.
+
+> **Important:** *JavaScript Origins* and *Redirect URIs* are different lists in Cloud Console. The script needs the entry in **Authorized redirect URIs**, not Authorized JavaScript origins.
+
+**Fix:**
+
+1. Open [console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials)
+2. Click your OAuth 2.0 Client ID (the one whose `client_id` is in `google-ads.yaml`)
+3. Under **Authorized redirect URIs** click **+ Add URI**
+4. Paste exactly: `http://localhost:8081/` (include the trailing slash)
+5. Click **Save**
+6. Re-run `python scripts/refresh-local-token.py`
+
+If you'd rather use a different port, change `LOCAL_REDIRECT_PORT` at the top of the script to match a port you already have registered.
+
+### 3. `invalid_grant` from the local API lane
+
+**Symptom:** `connection_status` says Method 1 is "active", but `list_accounts` or any GAQL query fails with `Error: invalid_grant`.
+
+**Cause:** Your Method 1 refresh token is expired or revoked. Refresh tokens get killed by:
+- 6 months of inactivity
+- Password change on the Google account that issued them
+- Manual revocation at [myaccount.google.com/permissions](https://myaccount.google.com/permissions)
+- Issuing >50 refresh tokens for the same client (Google evicts the oldest)
+
+**Fix — generate a new refresh token, no manual OAuth Playground click-fest required:**
+
+```bash
+cd /path/to/your/google-ads.yaml/parent-dir
+pip install google-auth-oauthlib pyyaml
+python /path/to/google-ads-gemini-extension/scripts/refresh-local-token.py
+```
+
+The script reads `client_id` and `client_secret` from `google-ads.yaml`, opens the browser, captures the new refresh token from Google's redirect, and writes it back to the YAML in place. Then `/quit` and re-launch Gemini to pick up the new token. (This script is also why Common Gotcha #2 exists — read it.)
+
+### 4. "Sign-in timed out after 120s" but the browser said "Success"
+
+**Symptom:** You completed the sign-in flow, the browser confirmed success, but Gemini says it timed out.
+
+**Cause:** The poll handle in your terminal already reached its 120-second deadline before the browser callback completed (slow Google consent step, network blip, or you walked away mid-flow). The session itself is valid — Gemini just stopped waiting for it.
+
+**Fix:** Just type `/google-ads:login` again. Because the session is already minted on the server, the second attempt picks it up almost instantly.
+
+### 5. "0 leaf accounts found" on an MCC
+
+**Symptom:** `list_sub_accounts` on your MCC returns "Leaf accounts: 0 found", even though there are clearly accounts under it in the Google Ads UI.
+
+**Cause:** This usually means one of:
+- The signed-in Google account has access to the MCC but not its sub-accounts (rare but possible — check Tools & Settings → Access & Security on each sub-account)
+- The MCC is deeply nested and you're querying a leaf-MCC level that doesn't expose its grandchildren
+- A stale env (see Gotcha #1 — try the restart first)
+
+**Fix:** First do the full restart from #1. If that doesn't help, run `list_accounts` (without the customer_id filter) to see everything your identity can reach, then query specific Customer IDs directly.
+
+---
 
 **Two independent lanes, both active at once:**
 
@@ -249,50 +383,77 @@ These tools make changes to your Google Ads account. **Every write tool requires
 
 ---
 
-## Getting Credentials
+## Getting Credentials (Method 1 only)
 
-> **Do you actually need this?** If you just want to read and edit accounts that your Google login can see, you don't — run `/google-ads:login` and you're done. This section covers **Method 1** (the static API lane) which you only need if you want a fixed machine identity independent of whatever browser account you're signed in with. Many users run **both**.
+> **You probably don't need this.** If you ran `/google-ads:login` (Method 2) and `list_accounts` shows your accounts, you're done — close this section. This is only for users who want a **fixed machine identity** for CI/CD, scripting, or because they prefer the static API lane. Both methods can run side-by-side.
 
-> **Upgrading from v2.2?** Your existing `GADS_SITE_SESSION_ID` in `.env` is still honored as a fallback when no identity is stored, so nothing breaks. Run `/google-ads:login` once to migrate to the new identity store — afterwards you can delete `GADS_SITE_SESSION_ID` from `.env` entirely.
+> **Upgrading from v2.2?** Your existing `GADS_SITE_SESSION_ID` in `.env` is still honored as a fallback when no identity is stored, so nothing breaks. Run `/google-ads:login` once to migrate to the keychain — afterwards you can delete `GADS_SITE_SESSION_ID` entirely.
 
-You need **5 values** from **3 places**. This is a one-time setup.
+You'll collect **5 values** from **2 places**, then a one-shot script handles the rest.
 
-### From Google Ads (2 values)
+### Step A — From Google Ads (2 values)
 
-1. Go to [ads.google.com](https://ads.google.com)
-2. Click **Tools & Settings** (wrench icon) → **API Center**
-3. Copy your **Developer Token**
-4. Note your **Login Customer ID** — this is your MCC (Manager) account ID, the 10-digit number at the top of the page (format: `123-456-7890`)
+1. Open [ads.google.com](https://ads.google.com)
+2. Click **Tools & Settings** (wrench icon, top-right) → under "Setup" → **API Center**
+3. Copy the **Developer token** (looks like 22 alphanumeric chars)
+4. Note your **Manager (MCC) account ID** — the 10-digit number at the top of the page (format `123-456-7890`). Strip the dashes when you save it.
 
-> **Don't have API access?** You'll need to [apply for a developer token](https://developers.google.com/google-ads/api/docs/get-started/dev-token). Basic access is usually approved within a few days.
+> **No API access yet?** [Apply for a developer token](https://developers.google.com/google-ads/api/docs/get-started/dev-token). Basic access is usually approved within 1–3 business days.
 
-### From Google Cloud Console (2 values)
+### Step B — From Google Cloud Console (2 values + 1 critical setting)
 
-1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Create a project (or select an existing one)
-3. Go to **APIs & Services** → **Library** → search for "Google Ads API" → **Enable** it
-4. Go to **APIs & Services** → **Credentials** → **Create Credentials** → **OAuth client ID**
-5. Choose **Web application** as the application type
-6. Add `https://developers.google.com/oauthplayground` as an authorized redirect URI
-7. Copy your **Client ID** and **Client Secret**
+1. Open [console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials)
+2. Top bar → pick or create a project → click **+ CREATE CREDENTIALS** → **OAuth client ID**
+3. **Application type:** select **Web application**
+4. **Name:** anything memorable, e.g. `gemini-cli-google-ads`
+5. Under **Authorized redirect URIs** click **+ ADD URI** and add **both**:
+   - `http://localhost:8081/`  ← required by `refresh-local-token.py`, must include trailing slash
+   - `https://developers.google.com/oauthplayground`  ← optional fallback if the script ever fails
+6. Click **CREATE**
+7. Copy the **Client ID** and **Client Secret** from the modal that appears
 
-### From OAuth Playground (1 value)
+If you skip the `localhost:8081/` step you'll hit Common Gotcha #2 (`redirect_uri_mismatch`).
 
-1. Go to [developers.google.com/oauthplayground](https://developers.google.com/oauthplayground/)
-2. Click the **gear icon** (top right) → check **Use your own OAuth credentials**
-3. Paste your **Client ID** and **Client Secret** from the previous step
-4. In the left panel, find **Google Ads API v22** → select `https://www.googleapis.com/auth/adwords`
-5. Click **Authorize APIs** → sign in with the Google account that has access to your Google Ads
-6. Click **Exchange authorization code for tokens**
-7. Copy the **Refresh Token**
+### Step C — Generate the refresh token (1 value, automated)
 
-### Enter your credentials
+Save your 4 values into a `google-ads.yaml` file in any directory:
+
+```yaml
+developer_token: PASTE_FROM_STEP_A
+client_id: PASTE_FROM_STEP_B
+client_secret: PASTE_FROM_STEP_B
+login_customer_id: '1234567890'   # your MCC, no dashes, quoted as a string
+use_proto_plus: True
+# refresh_token: filled in by the script in the next step
+```
+
+Then run the helper script (one-time `pip install`, then a single command):
+
+```bash
+cd /path/to/where/google-ads.yaml/lives
+pip install google-auth-oauthlib pyyaml
+python /path/to/google-ads-gemini-extension/scripts/refresh-local-token.py
+```
+
+The script:
+1. Reads `client_id` and `client_secret` from your `google-ads.yaml`
+2. Spins up a local listener on `http://localhost:8081/`
+3. Opens your browser to Google's consent screen
+4. Receives the auth code on the loopback callback
+5. Exchanges it for a fresh `refresh_token`
+6. Writes the token back into `google-ads.yaml` in place
+
+You'll see `✓ Wrote new refresh_token to google-ads.yaml` when it's done. **No copy-pasting from OAuth Playground required.**
+
+> **Prefer OAuth Playground anyway?** It still works as a fallback. Visit [developers.google.com/oauthplayground](https://developers.google.com/oauthplayground/) → gear icon → "Use your own OAuth credentials" → paste your client ID/secret → in the left panel pick **Google Ads API v22** → `https://www.googleapis.com/auth/adwords` → **Authorize APIs** → **Exchange authorization code for tokens** → copy the refresh token into `google-ads.yaml`.
+
+### Step D — Point the extension at your credentials
 
 ```bash
 gemini extensions config google-ads-agent
 ```
 
-It will prompt for each value. Sensitive fields (developer token, client secret, refresh token) are stored in your system keychain — not in plain text.
+It will prompt for each value. Sensitive fields (developer token, client secret, refresh token) are stored in your OS keychain — not in plain text. Then `/quit` and re-launch Gemini so the MCP server picks up the new credentials.
 
 ---
 
@@ -351,6 +512,8 @@ google-ads-gemini-extension/
 │   └── log-tool-call.js        # Audit trail logger
 ├── policies/
 │   └── safety.toml             # User confirmation rules for all 22 tools (write tools at higher priority)
+├── scripts/
+│   └── refresh-local-token.py  # One-shot Method 1 refresh-token regenerator
 ├── LICENSE
 └── README.md
 ```
@@ -380,14 +543,21 @@ Changes auto-reload — no need to reinstall.
 
 ## Troubleshooting
 
+> **First, always:** if anything weird is happening, do `/quit` → `gemini` → `/google-ads:logout` → `/google-ads:login` before deeper debugging. See [Common Gotchas #1](#common-gotchas) for why.
+
 | Problem | Solution |
 |---------|----------|
-| `command not found: gemini` | Run `npm install -g @google/gemini-cli` |
+| `command not found: gemini` | Run `npm install -g @google/gemini-cli`. If still failing, your global npm bin isn't on `$PATH` — run `npm prefix -g` and add `<that>/bin` to `$PATH` in your shell rc file. |
 | `Please set an Auth method` | Create `~/.gemini/.env` with `GEMINI_API_KEY=your-key` ([get one free](https://aistudio.google.com/apikey)) |
+| `0 accounts available` after a successful login | Stale env. `/quit`, re-run `gemini`, then `/google-ads:logout && /google-ads:login`. See [Common Gotchas #1](#common-gotchas). |
+| `Site credentials unavailable — session may have expired` (right after a fresh login) | Same root cause as "0 accounts". Full process restart fixes it. |
+| `Sign-in timed out after 120s` but the browser said "Success" | Just re-run `/google-ads:login`. The session is already minted server-side; the second attempt picks it up. |
+| `redirect_uri_mismatch` from `refresh-local-token.py` | Add `http://localhost:8081/` (with trailing slash) to your OAuth client's **Authorized redirect URIs** at [console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials). See [Common Gotchas #2](#common-gotchas). |
+| `Error: invalid_grant` from any GAQL or Method 1 tool | Refresh token expired/revoked. Re-run `python scripts/refresh-local-token.py`. See [Common Gotchas #3](#common-gotchas). |
 | `Missing Google Ads credentials` | Run `gemini extensions config google-ads-agent` |
-| `Authentication failed` | Your refresh token may have expired — regenerate it in [OAuth Playground](https://developers.google.com/oauthplayground/) |
-| `Permission denied` | Make sure the account is accessible under your MCC |
-| `Rate limit exceeded` | Wait 60 seconds — the extension limits to 10 calls/min per tool |
+| `Permission denied` | Make sure the signed-in account has at least Read access in Google Ads → **Tools & Settings** → **Access & Security**. |
+| `Rate limit exceeded` | Wait 60 seconds — the extension limits to 10 calls/min per tool. |
+| Anything else weird | Tail the audit log: `tail -f ~/.gemini/logs/google-ads-agent.log`. Every tool call is logged there with arguments and outcome. |
 
 ## Related
 

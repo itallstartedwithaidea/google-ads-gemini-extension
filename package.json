@@ -1,6 +1,6 @@
 {
   "name": "google-ads-gemini-extension",
-  "version": "2.4.2",
+  "version": "2.4.3",
   "description": "Gemini CLI extension for Google Ads management — dual-lane sign-in (static API + one-click proxy OAuth via ahmeego.com, multi-identity, OS keychain), MCP server with live API tools, skills, commands, hooks, and theme",
   "type": "module",
   "scripts": {
