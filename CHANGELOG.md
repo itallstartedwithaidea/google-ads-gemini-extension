@@ -4,6 +4,20 @@ All notable changes to the `google-ads-gemini-extension` (installed as `google-a
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.4] — 2026-05-12
+
+### Fixed
+- **`scripts/refresh-local-token.py` now actually fixes `invalid_grant` for the Gemini extension.** The v2.4.3 version only wrote the new refresh token to `google-ads.yaml`, which the extension's MCP server never reads — the server reads `process.env.GOOGLE_ADS_REFRESH_TOKEN`, populated from the OS keychain (or `~/.gemini/extensions/google-ads-agent/.env`). The script now performs a second step that idempotently upserts `GOOGLE_ADS_REFRESH_TOKEN`, `GOOGLE_ADS_CLIENT_SECRET`, and `GOOGLE_ADS_DEVELOPER_TOKEN` into the extension's `.env` so the MCP server picks up the new token after a `/quit` and relaunch. `.env` overrides the keychain.
+- **README Common Gotcha #3 corrected.** Previous wording implied running the script alone fixed `invalid_grant` for the Gemini extension; in reality v2.4.3 left the keychain stale. New wording clearly explains both storage locations (Python `google-ads.yaml` vs Node MCP env var / keychain) and the dual-update requirement, and points users at the v2.4.4 script that handles both automatically.
+- **Troubleshooting table** has a new row for the case "Method 1 keeps showing `invalid_grant` even after running the refresh script" (pre-v2.4.4 script footgun).
+
+### Added
+- `GADS_EXT_ENV` environment variable lets users with a non-standard extension install path point the script at the correct `.env`. If unset, the script defaults to `~/.gemini/extensions/google-ads-agent/.env` and falls through gracefully when the file doesn't exist.
+- The script's success output now spells out the post-run "Restart Gemini, then verify with `connection_status` plus a real call like `account_health`" sequence so users don't stop halfway.
+
+### Migration
+- No behavior changes for existing keychains. If you ran v2.4.3's script and are still seeing `invalid_grant`, just rerun the v2.4.4 script — it'll detect the stale keychain entry, write the override to `.env`, and your next Gemini restart will use the working token.
+
 ## [2.4.3] — 2026-05-12
 
 ### Added
@@ -110,6 +124,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - Audit logging hook writing to `~/.gemini/logs/google-ads-agent.log`.
 
 [2.4.2]: https://github.com/itallstartedwithaidea/google-ads-gemini-extension/releases/tag/v2.4.2
+[2.4.4]: https://github.com/itallstartedwithaidea/google-ads-gemini-extension/releases/tag/v2.4.4
 [2.4.3]: https://github.com/itallstartedwithaidea/google-ads-gemini-extension/releases/tag/v2.4.3
 [2.4.1]: https://github.com/itallstartedwithaidea/google-ads-gemini-extension/releases/tag/v2.4.1
 [2.4.0]: https://github.com/itallstartedwithaidea/google-ads-gemini-extension/releases/tag/v2.4.0

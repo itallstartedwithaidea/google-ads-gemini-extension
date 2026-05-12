@@ -19,7 +19,7 @@ try {
 
 const server = new McpServer({
   name: "google-ads-agent",
-  version: "2.4.3",
+  version: "2.4.4",
 });
 
 // ─── Rate Limiter ────────────────────────────────────────────────────────────

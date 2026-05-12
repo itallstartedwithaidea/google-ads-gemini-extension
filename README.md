@@ -164,7 +164,7 @@ If you'd rather use a different port, change `LOCAL_REDIRECT_PORT` at the top of
 
 ### 3. `invalid_grant` from the local API lane
 
-**Symptom:** `connection_status` says Method 1 is "active", but `list_accounts` or any GAQL query fails with `Error: invalid_grant`.
+**Symptom:** `connection_status` says Method 1 is "active" or "Connected", but `list_accounts` or any GAQL query fails with `Error: invalid_grant`. The "Connected" reading is misleading — it just checks "are the four required env vars set?", not "does the token actually work?".
 
 **Cause:** Your Method 1 refresh token is expired or revoked. Refresh tokens get killed by:
 - 6 months of inactivity
@@ -172,7 +172,16 @@ If you'd rather use a different port, change `LOCAL_REDIRECT_PORT` at the top of
 - Manual revocation at [myaccount.google.com/permissions](https://myaccount.google.com/permissions)
 - Issuing >50 refresh tokens for the same client (Google evicts the oldest)
 
-**Fix — generate a new refresh token, no manual OAuth Playground click-fest required:**
+**Important — the MCP server reads `process.env.GOOGLE_ADS_REFRESH_TOKEN`, not `google-ads.yaml`.** Your refresh token lives in two places that need to be kept in sync:
+
+| Where | Used by |
+|---|---|
+| `google-ads.yaml` | Python projects that call `GoogleAdsClient.load_from_storage()` (Buddy, google-ads-python, etc.) |
+| OS keychain (set by `gemini extensions config google-ads-agent`) **and/or** `~/.gemini/extensions/google-ads-agent/.env` | This Gemini extension's MCP server. `.env` overrides the keychain. |
+
+If you only update `google-ads.yaml`, your Python tooling works but **the Gemini extension keeps using the stale keychain entry and stays broken.**
+
+**Fix — generate a new refresh token, then propagate it to BOTH places:**
 
 ```bash
 cd /path/to/your/google-ads.yaml/parent-dir
@@ -180,7 +189,13 @@ pip install google-auth-oauthlib pyyaml
 python /path/to/google-ads-gemini-extension/scripts/refresh-local-token.py
 ```
 
-The script reads `client_id` and `client_secret` from `google-ads.yaml`, opens the browser, captures the new refresh token from Google's redirect, and writes it back to the YAML in place. Then `/quit` and re-launch Gemini to pick up the new token. (This script is also why Common Gotcha #2 exists — read it.)
+`refresh-local-token.py` (v2.4.4+) does both steps automatically:
+1. Runs the OAuth flow on `http://localhost:8081/`, captures the new refresh token, writes it into `google-ads.yaml`.
+2. **Also writes `GOOGLE_ADS_REFRESH_TOKEN`, `GOOGLE_ADS_CLIENT_SECRET`, and `GOOGLE_ADS_DEVELOPER_TOKEN` into `~/.gemini/extensions/google-ads-agent/.env`** so the extension picks up the new value on next startup. `.env` overrides the keychain.
+
+If your extension lives somewhere non-standard, set `GADS_EXT_ENV=/abs/path/to/.env` before running the script. If you'd rather not let the script touch your `.env`, run `gemini extensions config google-ads-agent` instead and paste the new refresh token from `google-ads.yaml` line 8 manually.
+
+**After running the script, `/quit` and re-launch Gemini** so the MCP server re-reads `.env`. (This is the same restart rule as Common Gotcha #1.)
 
 ### 4. "Sign-in timed out after 120s" but the browser said "Success"
 
@@ -553,7 +568,8 @@ Changes auto-reload — no need to reinstall.
 | `Site credentials unavailable — session may have expired` (right after a fresh login) | Same root cause as "0 accounts". Full process restart fixes it. |
 | `Sign-in timed out after 120s` but the browser said "Success" | Just re-run `/google-ads:login`. The session is already minted server-side; the second attempt picks it up. |
 | `redirect_uri_mismatch` from `refresh-local-token.py` | Add `http://localhost:8081/` (with trailing slash) to your OAuth client's **Authorized redirect URIs** at [console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials). See [Common Gotchas #2](#common-gotchas). |
-| `Error: invalid_grant` from any GAQL or Method 1 tool | Refresh token expired/revoked. Re-run `python scripts/refresh-local-token.py`. See [Common Gotchas #3](#common-gotchas). |
+| `Error: invalid_grant` from any GAQL or Method 1 tool | Refresh token expired/revoked. Run `python scripts/refresh-local-token.py` — it updates **both** `google-ads.yaml` (for Python tooling) **and** `~/.gemini/extensions/google-ads-agent/.env` (for the Gemini extension's MCP server). Then `/quit` + relaunch Gemini. See [Common Gotchas #3](#common-gotchas) for why both stores need updating. |
+| Method 1 keeps showing `invalid_grant` even after running the refresh script | You're running an older copy of the script (pre-v2.4.4) that only writes to `google-ads.yaml` and not to the extension's `.env`. The OS keychain still has the stale token. Either upgrade the script (it's at `scripts/refresh-local-token.py` in this repo, v2.4.4+) or run `gemini extensions config google-ads-agent` and paste the new refresh token from `google-ads.yaml` manually. |
 | `Missing Google Ads credentials` | Run `gemini extensions config google-ads-agent` |
 | `Permission denied` | Make sure the signed-in account has at least Read access in Google Ads → **Tools & Settings** → **Access & Security**. |
 | `Rate limit exceeded` | Wait 60 seconds — the extension limits to 10 calls/min per tool. |
